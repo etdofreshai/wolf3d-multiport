@@ -195,14 +195,9 @@ void VL_WaitVBL (int vbls)
 =======================
 */
 
-static Uint32 SDLCALL VL_QuitTimerCallback(void *userdata, SDL_TimerID timerID, Uint32 interval)
-{
-	(void)userdata;
-	(void)timerID;
-	(void)interval;
-	_exit(0);		// immediate exit from timer thread
-	return 0;
-}
+// Timer-based quit removed: _exit() from a timer thread is unsafe (can
+// corrupt stdio, mask crashes with clean exit).  Quit is now poll-based
+// in VL_WaitVBL, VL_UpdateScreen, and CalcTics.
 
 
 /*
@@ -247,11 +242,12 @@ void	VL_Startup (void)
 	memset(sdl_screenbuf, 0, sizeof(sdl_screenbuf));
 	memset(sdl_palette, 0, sizeof(sdl_palette));
 
-	// Start the auto-quit timer now that SDL is initialized
+	// Start the auto-quit epoch now that SDL is initialized
 	if (quit_after_ms > 0)
 	{
 		quit_after_start = SDL_GetTicks();
-		SDL_AddTimer(quit_after_ms, VL_QuitTimerCallback, NULL);
+		// NOTE: timer-based _exit removed; quit is now poll-based only
+		// (checked in VL_UpdateScreen, VL_WaitVBL, and CalcTics)
 	}
 }
 

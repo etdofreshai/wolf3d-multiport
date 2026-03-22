@@ -98,52 +98,10 @@ void ReadConfig(void)
 	SDSMode         sds;
 
 
-	if ( (file = fopen(configname,"rb")) != NULL)
-	{
-	//
-	// valid config file
-	//
-		fread(Scores,sizeof(HighScore),MaxScores,file);
-
-		fread(&sd,sizeof(sd),1,file);
-		fread(&sm,sizeof(sm),1,file);
-		fread(&sds,sizeof(sds),1,file);
-
-		fread(&mouseenabled,sizeof(mouseenabled),1,file);
-		fread(&joystickenabled,sizeof(joystickenabled),1,file);
-		fread(&joypadenabled,sizeof(joypadenabled),1,file);
-		fread(&joystickprogressive,sizeof(joystickprogressive),1,file);
-		fread(&joystickport,sizeof(joystickport),1,file);
-
-		fread(&dirscan,sizeof(dirscan),1,file);
-		fread(&buttonscan,sizeof(buttonscan),1,file);
-		fread(&buttonmouse,sizeof(buttonmouse),1,file);
-		fread(&buttonjoy,sizeof(buttonjoy),1,file);
-
-		fread(&viewsize,sizeof(viewsize),1,file);
-		fread(&mouseadjustment,sizeof(mouseadjustment),1,file);
-
-		fclose(file);
-
-		if (sd == sdm_AdLib && !AdLibPresent && !SoundBlasterPresent)
-		{
-			sd = sdm_PC;
-			sd = smm_Off;
-		}
-
-		if ((sds == sds_SoundBlaster && !SoundBlasterPresent) ||
-			(sds == sds_SoundSource && !SoundSourcePresent))
-			sds = sds_Off;
-
-		if (!MousePresent)
-			mouseenabled = false;
-		if (!JoysPresent[joystickport])
-			joystickenabled = false;
-
-		MainMenu[6].active=1;
-		MainItems.curpos=0;
-	}
-	else
+	// SDL3 port: skip loading DOS CONFIG.WL6 -- its binary layout assumes
+	// 16-bit int (2 bytes) and reading it with 32-bit int (4 bytes) produces
+	// garbage values for viewsize, mouseadjustment, key bindings, etc.
+	// Always use sane defaults instead.
 	{
 	//
 	// no config file, so select by hardware
@@ -174,7 +132,7 @@ void ReadConfig(void)
 		joystickport = 0;
 		joystickprogressive = false;
 
-		viewsize = 15;
+		viewsize = 19;		// near-maximum view size for best visual
 		mouseadjustment=5;
 	}
 

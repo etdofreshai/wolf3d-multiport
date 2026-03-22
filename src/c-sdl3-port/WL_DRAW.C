@@ -1163,7 +1163,16 @@ void CalcTics (void)
 		if (!tics)
 		{
 			IN_ProcessEvents();	// keep window responsive while waiting
+			SD_TimeCountUpdate();
 			SDL_Delay(1);		// don't burn CPU
+
+			// Auto-quit check so we don't hang forever
+			if (quit_after_ms > 0 && quit_after_start > 0 &&
+				SDL_GetTicks() - quit_after_start >= quit_after_ms)
+			{
+				VL_Shutdown();
+				exit(0);
+			}
 		}
 	} while (!tics);			// make sure at least one tic passes
 
