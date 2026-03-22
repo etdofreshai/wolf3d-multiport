@@ -4,6 +4,7 @@
 import * as VL from './id_vl';
 import * as IN from './id_in';
 import * as SD from './id_sd';
+import * as US from './id_us_1';
 import {
     MAXACTORS, MAXSTATS, MAXDOORS, NUMBUTTONS, NUMAREAS,
     MAPSIZE, MAXVIEWWIDTH, MAXTICS, DEMOTICS,
@@ -11,16 +12,25 @@ import {
     exit_t, classtype, activetype, dirtype,
     tilemap, actorat, spotvis,
     UPDATESIZE, update,
-    setTics,
+    setTics, tics,
 } from './wl_def';
-import { gamestate, viewsize, buttonscan, buttonmouse, buttonjoy,
-    dirscan, mouseenabled, joystickenabled, mouseadjustment } from './wl_main';
+import {
+    gamestate, viewsize, buttonscan, buttonmouse, buttonjoy,
+    dirscan, mouseenabled, joystickenabled, mouseadjustment,
+} from './wl_main';
+import * as Draw from './wl_draw';
+const ThreeDRefresh = () => Draw.ThreeDRefresh();
+let lasttimecount = 0;
+import { MoveDoors, MovePWalls, ConnectAreas } from './wl_act1';
+import { soundnames } from './audiowl6';
+import * as WlState from './wl_state';
 
 //===========================================================================
 // Global variables
 //===========================================================================
 
 export let playstate: exit_t = exit_t.ex_stillplaying;
+export function setPlaystate(v: exit_t): void { playstate = v; }
 
 export let madenoise = false;
 
@@ -72,7 +82,6 @@ const NUMWHITESHIFTS = 3;
 //===========================================================================
 
 export function InitActorList(): void {
-    // Initialize linked list of actors
     for (let i = 0; i < MAXACTORS; i++) {
         Object.assign(objlist[i], newObjtype());
     }
@@ -87,7 +96,6 @@ export function InitActorList(): void {
     lastobj = objlist[0];
     lastobj.next = null;
 
-    // Player is always objlist[0]
     player = objlist[0];
     player.active = activetype.ac_allways;
     player.obclass = classtype.playerobj;
@@ -105,10 +113,8 @@ export function GetNewActor(): objtype {
     newobj = objfreelist;
     objfreelist = objfreelist.next;
 
-    // Clear the new object
     Object.assign(newobj, newObjtype());
 
-    // Link it in
     if (lastobj) {
         lastobj.next = newobj;
     }
@@ -128,12 +134,10 @@ export function RemoveObj(gone: objtype): void {
         throw new Error('RemoveObj: Tried to remove player!');
     }
 
-    // Unlink from active list
     if (gone.prev) gone.prev.next = gone.next;
     if (gone.next) gone.next.prev = gone.prev;
     if (gone === lastobj) lastobj = gone.prev;
 
-    // Add to free list
     gone.next = objfreelist;
     objfreelist = gone;
 }
@@ -153,14 +157,13 @@ export function PollControls(): void {
     controlx = 0;
     controly = 0;
 
-    // Handle keyboard/joystick control
     if (info.xaxis === -1) controlx = -1;
     else if (info.xaxis === 1) controlx = 1;
 
     if (info.yaxis === -1) controly = -1;
     else if (info.yaxis === 1) controly = 1;
 
-    // Check button states
+    // Check button states from keyboard
     for (let i = 0; i < NUMBUTTONS; i++) {
         buttonstate[i] = IN.IN_KeyDown(buttonscan[i]);
     }
@@ -168,11 +171,10 @@ export function PollControls(): void {
     // Mouse buttons
     if (mouseenabled) {
         const mb = IN.IN_MouseButtons();
-        if (mb & 1) buttonstate[0] = true;  // attack
-        if (mb & 2) buttonstate[1] = true;  // strafe
-        if (mb & 4) buttonstate[2] = true;  // use
+        if (mb & 1) buttonstate[0] = true;
+        if (mb & 2) buttonstate[1] = true;
+        if (mb & 4) buttonstate[2] = true;
 
-        // Mouse movement
         const md = IN.IN_GetMouseDelta();
         controlx += (md.x * mouseadjustment / 10) | 0;
     }
@@ -198,8 +200,6 @@ export function CenterWindow(w: number, h: number): void {
     US.US_CenterWindow(w, h);
 }
 
-import * as US from './id_us_1';
-
 //===========================================================================
 // StopMusic / StartMusic
 //===========================================================================
@@ -216,13 +216,12 @@ export function StartMusic(): void {
 // PlaySoundLocGlobal / UpdateSoundLoc
 //===========================================================================
 
-export function PlaySoundLocGlobal(_s: number, _gx: number, _gy: number): void {
-    // Play a positional sound
-    SD.SD_PlaySound(_s);
+export function PlaySoundLocGlobal(s: number, _gx: number, _gy: number): void {
+    SD.SD_PlaySound(s);
 }
 
 export function UpdateSoundLoc(): void {
-    // Update sound positioning based on player location
+    // Update sound positioning
 }
 
 //===========================================================================
@@ -230,11 +229,11 @@ export function UpdateSoundLoc(): void {
 //===========================================================================
 
 export function StartDamageFlash(_damage: number): void {
-    // Start red flash effect
+    // Red flash effect
 }
 
 export function StartBonusFlash(): void {
-    // Start white/gold flash effect
+    // White/gold flash effect
 }
 
 //===========================================================================
@@ -242,10 +241,48 @@ export function StartBonusFlash(): void {
 //===========================================================================
 
 export function CalcTics(): void {
-    // Calculate number of tics since last frame
-    // This drives the game speed
-    const tics = Math.min(Math.max(1, ((performance.now() / (1000 / 70)) | 0) - SD.TimeCount + 1), MAXTICS);
-    setTics(tics);
+    const newtime = SD.TimeCount;
+    let t = newtime - lasttimecount;
+    if (t <= 0) t = 1;
+    if (t > MAXTICS) t = MAXTICS;
+    setTics(t);
+    lasttimecount = newtime;
+}
+
+//===========================================================================
+// DoActor - process a single actor's state machine
+//===========================================================================
+
+function DoActor(ob: objtype): void {
+    if (!ob.state) return;
+
+    if (ob.ticcount > 0) {
+        ob.ticcount -= tics;
+        while (ob.ticcount <= 0) {
+            // Action at end of state
+            if (ob.state && ob.state.action) {
+                ob.state.action(ob);
+            }
+            // Move to next state
+            if (ob.state && ob.state.next) {
+                ob.state = ob.state.next;
+                ob.ticcount += ob.state.tictime;
+            } else {
+                break;
+            }
+        }
+    }
+
+    // Think function
+    if (ob.state && ob.state.think) {
+        ob.state.think(ob);
+    }
+
+    // Move if distance is set
+    if (ob.distance > 0 && ob.speed > 0) {
+        const move = Math.min(ob.speed * tics, ob.distance);
+        WlState.MoveObj(ob, move);
+    }
 }
 
 //===========================================================================
@@ -254,16 +291,36 @@ export function CalcTics(): void {
 
 export async function PlayLoop(): Promise<void> {
     playstate = exit_t.ex_stillplaying;
+    lasttimecount = 0;
 
     while (playstate === exit_t.ex_stillplaying) {
+        IN.IN_ProcessEvents();
         PollControls();
         CalcTics();
 
-        // Process actors, doors, pushwalls
-        // ThreeDRefresh() - render the 3D view
-        // Draw status bar updates
+        // Process the player
+        if (player && player.state && player.state.think) {
+            player.state.think(player);
+        }
 
-        VL.VL_UpdateScreen();
+        // Process all actors
+        for (let check = player ? player.next : null; check; check = check.next) {
+            if (check.active === activetype.ac_no) continue;
+            DoActor(check);
+        }
+
+        // Process doors and pushwalls
+        MoveDoors();
+        MovePWalls();
+
+        // Update sound positioning
+        UpdateSoundLoc();
+
+        // Render the 3D view
+        ThreeDRefresh();
+
+        // Update time count
+        gamestate.TimeCount += tics;
 
         // Yield to browser
         await new Promise(resolve => requestAnimationFrame(resolve));
@@ -271,6 +328,11 @@ export async function PlayLoop(): Promise<void> {
         // Check for escape
         if (IN.IN_KeyDown(IN.sc_Escape)) {
             playstate = exit_t.ex_abort;
+        }
+
+        // Check for player death
+        if (gamestate.health <= 0) {
+            playstate = exit_t.ex_died;
         }
     }
 }

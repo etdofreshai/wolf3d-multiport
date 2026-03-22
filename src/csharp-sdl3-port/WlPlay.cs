@@ -158,7 +158,7 @@ namespace Wolf3D
                 WlDraw.CalcTics();
 
                 // Move player
-                WlAgent.T_Player();
+                WlAgent.T_Player(WL_Globals.player);
 
                 // Move objects
                 DoActors();

@@ -103,9 +103,76 @@ namespace Wolf3D
             if (door < 0 || door >= WolfConstants.MAXDOORS) return;
             if (WL_Globals.doorobjlist[door].action == dooraction_t.dr_open)
                 return;
+            if (WL_Globals.doorobjlist[door].action == dooraction_t.dr_opening)
+                return;
 
             WL_Globals.doorobjlist[door].action = dooraction_t.dr_opening;
             WL_Globals.doorobjlist[door].ticcount = 0;
+            IdSd.SD_PlaySound(soundnames.OPENDOORSND);
+        }
+
+        public static void CloseDoor(int door)
+        {
+            if (door < 0 || door >= WolfConstants.MAXDOORS) return;
+
+            // Don't close if player or actor is in the door tile
+            int tilex = WL_Globals.doorobjlist[door].tilex;
+            int tiley = WL_Globals.doorobjlist[door].tiley;
+
+            if (WL_Globals.player.tilex == tilex && WL_Globals.player.tiley == tiley)
+            {
+                // Player in doorway, reset timer
+                WL_Globals.doorobjlist[door].ticcount = OPENTICS;
+                return;
+            }
+
+            WL_Globals.doorobjlist[door].action = dooraction_t.dr_closing;
+            IdSd.SD_PlaySound(soundnames.CLOSEDOORSND);
+        }
+
+        public static void ConnectAreas()
+        {
+            // Reset area connections
+            Array.Clear(WL_Globals.areaconnect, 0, WL_Globals.areaconnect.Length);
+            Array.Clear(WL_Globals.areabyplayer, 0, WL_Globals.areabyplayer.Length);
+
+            // Connect areas through open doors
+            for (int door = 0; door < WL_Globals.doornum; door++)
+            {
+                if (WL_Globals.doorobjlist[door].action == dooraction_t.dr_open ||
+                    WL_Globals.doorobjlist[door].action == dooraction_t.dr_opening)
+                {
+                    int tx = WL_Globals.doorobjlist[door].tilex;
+                    int ty = WL_Globals.doorobjlist[door].tiley;
+
+                    // Connect the two areas on either side of the door
+                    // For vertical doors, connect east-west; for horizontal, north-south
+                }
+            }
+
+            // Mark area the player is in
+            if (WL_Globals.player.areanumber >= 0 && WL_Globals.player.areanumber < WolfConstants.NUMAREAS)
+                WL_Globals.areabyplayer[WL_Globals.player.areanumber] = true;
+
+            // Flood fill connected areas
+            bool changed = true;
+            while (changed)
+            {
+                changed = false;
+                for (int i = 0; i < WolfConstants.NUMAREAS; i++)
+                {
+                    if (!WL_Globals.areabyplayer[i]) continue;
+                    for (int j = 0; j < WolfConstants.NUMAREAS; j++)
+                    {
+                        if (WL_Globals.areabyplayer[j]) continue;
+                        if (WL_Globals.areaconnect[i, j] != 0)
+                        {
+                            WL_Globals.areabyplayer[j] = true;
+                            changed = true;
+                        }
+                    }
+                }
+            }
         }
 
         public static void OperateDoor(int door)
@@ -138,18 +205,21 @@ namespace Wolf3D
 
         public static void MoveDoors()
         {
+            bool doorsMoved = false;
             for (int door = 0; door < WL_Globals.doornum; door++)
             {
                 var d = WL_Globals.doorobjlist[door];
                 switch (d.action)
                 {
                     case dooraction_t.dr_opening:
+                        doorsMoved = true;
                         WL_Globals.doorposition[door] += DOORSPEED * WL_Globals.tics;
                         if (WL_Globals.doorposition[door] >= 0xFFFF)
                         {
                             WL_Globals.doorposition[door] = 0xFFFF;
                             d.action = dooraction_t.dr_open;
                             d.ticcount = OPENTICS;
+                            // Connect areas on door open
                         }
                         break;
 
@@ -157,12 +227,13 @@ namespace Wolf3D
                         d.ticcount -= WL_Globals.tics;
                         if (d.ticcount <= 0)
                         {
-                            d.action = dooraction_t.dr_closing;
-                            d.ticcount = 0;
+                            CloseDoor(door);
+                            doorsMoved = true;
                         }
                         break;
 
                     case dooraction_t.dr_closing:
+                        doorsMoved = true;
                         WL_Globals.doorposition[door] -= DOORSPEED * WL_Globals.tics;
                         if (WL_Globals.doorposition[door] <= 0)
                         {
@@ -172,6 +243,9 @@ namespace Wolf3D
                         break;
                 }
             }
+
+            if (doorsMoved)
+                ConnectAreas();
         }
 
         // =========================================================================

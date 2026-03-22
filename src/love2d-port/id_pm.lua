@@ -122,9 +122,19 @@ function id_pm.PM_GetPageBytes(pagenum)
     return bytes
 end
 
+-- Get sprite page
+function id_pm.PM_GetSpritePage(shapenum)
+    return id_pm.PM_GetPage(id_pm.PMSpriteStart + shapenum)
+end
+
 -- Get sound page
 function id_pm.PM_GetSoundPage(pagenum)
     return id_pm.PM_GetPage(id_pm.PMSoundStart + pagenum)
+end
+
+-- Called after frame to handle page fault scheduling
+function id_pm.PM_NextFrame()
+    -- No-op in this port (all data loaded at startup)
 end
 
 return id_pm

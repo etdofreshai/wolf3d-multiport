@@ -506,11 +506,10 @@ end
 ---------------------------------------------------------------------------
 
 function wl_main.GameLoop()
-    -- This would run the actual game loop
-    -- For now, just return to demo loop
+    local wl_game = require("wl_game")
+    wl_game.GameLoop()
     wl_main.startgame = false
     wl_main.loadedgame = false
-    wl_main.playstate = wl_def.ex_completed
 end
 
 ---------------------------------------------------------------------------

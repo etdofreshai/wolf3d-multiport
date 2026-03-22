@@ -234,13 +234,137 @@ namespace Wolf3D
             WlMain.NewGame(1, 0);  // Default: easy, episode 1
         }
 
-        public static void CP_Sound(int _) { }
-        public static int CP_LoadGame(int quick) { return 0; }
-        public static int CP_SaveGame(int quick) { return 0; }
-        public static void CP_Control(int _) { }
-        public static void CP_ChangeView(int _) { }
-        public static void CP_ViewScores(int _) { }
-        public static int CP_EndGame() { return 0; }
+        public static void CP_Sound(int _)
+        {
+            // Sound menu - toggle PC/AdLib/SoundBlaster
+            ClearMScreen();
+            DrawWindow(MenuConstants.SM_X, MenuConstants.SM_Y1, MenuConstants.SM_W, MenuConstants.SM_H1, MenuConstants.BKGDCOLOR);
+
+            WL_Globals.px = (ushort)(MenuConstants.SM_X + 10);
+            WL_Globals.py = (ushort)(MenuConstants.SM_Y1 + 5);
+            WL_Globals.fontcolor = MenuConstants.TEXTCOLOR;
+            IdVh.VW_DrawPropString("Sound Effects");
+
+            IdVl.VL_UpdateScreen();
+
+            // Wait for key
+            while (true)
+            {
+                IdIn.IN_ProcessEvents();
+                SDL.SDL_Delay(10);
+                if (WL_Globals.LastScan != ScanCodes.sc_None)
+                {
+                    WL_Globals.LastScan = ScanCodes.sc_None;
+                    return;
+                }
+            }
+        }
+
+        public static int CP_LoadGame(int quick)
+        {
+            // Load game menu - stub
+            Message("Load Game\nnot implemented");
+            IdVl.VL_UpdateScreen();
+            SDL.SDL_Delay(1000);
+            return 0;
+        }
+
+        public static int CP_SaveGame(int quick)
+        {
+            // Save game menu - stub
+            Message("Save Game\nnot implemented");
+            IdVl.VL_UpdateScreen();
+            SDL.SDL_Delay(1000);
+            return 0;
+        }
+
+        public static void CP_Control(int _)
+        {
+            // Control menu
+            ClearMScreen();
+            DrawWindow(MenuConstants.CTL_X, MenuConstants.CTL_Y, MenuConstants.CTL_W, MenuConstants.CTL_H, MenuConstants.BKGDCOLOR);
+
+            WL_Globals.px = (ushort)(MenuConstants.CTL_X + 10);
+            WL_Globals.py = (ushort)(MenuConstants.CTL_Y + 5);
+            WL_Globals.fontcolor = MenuConstants.TEXTCOLOR;
+            IdVh.VW_DrawPropString("Controls");
+
+            WL_Globals.px = (ushort)(MenuConstants.CTL_X + 10);
+            WL_Globals.py = (ushort)(MenuConstants.CTL_Y + 25);
+            IdVh.VW_DrawPropString("Mouse: " + (WL_Globals.mouseenabled ? "Enabled" : "Disabled"));
+
+            IdVl.VL_UpdateScreen();
+
+            while (true)
+            {
+                IdIn.IN_ProcessEvents();
+                SDL.SDL_Delay(10);
+                if (WL_Globals.LastScan != ScanCodes.sc_None)
+                {
+                    WL_Globals.LastScan = ScanCodes.sc_None;
+                    return;
+                }
+            }
+        }
+
+        public static void CP_ChangeView(int _)
+        {
+            // Change view size
+            ClearMScreen();
+            DrawWindow(MenuConstants.NM_X, MenuConstants.NM_Y, MenuConstants.NM_W, 60, MenuConstants.BKGDCOLOR);
+
+            WL_Globals.px = (ushort)(MenuConstants.NM_X + 10);
+            WL_Globals.py = (ushort)(MenuConstants.NM_Y + 10);
+            WL_Globals.fontcolor = MenuConstants.TEXTCOLOR;
+            IdVh.VW_DrawPropString("View Size: " + WL_Globals.viewsize.ToString());
+
+            IdVl.VL_UpdateScreen();
+
+            while (true)
+            {
+                IdIn.IN_ProcessEvents();
+                SDL.SDL_Delay(10);
+                byte scan = WL_Globals.LastScan;
+                if (scan == ScanCodes.sc_None) continue;
+                WL_Globals.LastScan = ScanCodes.sc_None;
+
+                if (scan == ScanCodes.sc_LeftArrow && WL_Globals.viewsize > 4)
+                    WL_Globals.viewsize -= 2;
+                else if (scan == ScanCodes.sc_RightArrow && WL_Globals.viewsize < 20)
+                    WL_Globals.viewsize += 2;
+                else if (scan == ScanCodes.sc_Escape || scan == ScanCodes.sc_Return)
+                    return;
+
+                // Redraw
+                DrawWindow(MenuConstants.NM_X, MenuConstants.NM_Y, MenuConstants.NM_W, 60, MenuConstants.BKGDCOLOR);
+                WL_Globals.px = (ushort)(MenuConstants.NM_X + 10);
+                WL_Globals.py = (ushort)(MenuConstants.NM_Y + 10);
+                IdVh.VW_DrawPropString("View Size: " + WL_Globals.viewsize.ToString());
+                IdVl.VL_UpdateScreen();
+            }
+        }
+
+        public static void CP_ViewScores(int _)
+        {
+            IdUs.US_DisplayHighScores(-1);
+            IdVl.VL_UpdateScreen();
+
+            while (true)
+            {
+                IdIn.IN_ProcessEvents();
+                SDL.SDL_Delay(10);
+                if (WL_Globals.LastScan != ScanCodes.sc_None)
+                {
+                    WL_Globals.LastScan = ScanCodes.sc_None;
+                    return;
+                }
+            }
+        }
+
+        public static int CP_EndGame()
+        {
+            return 0;
+        }
 
         public static void CP_Quit(int _)
         {

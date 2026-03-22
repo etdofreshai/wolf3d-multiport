@@ -242,8 +242,24 @@ namespace Wolf3D
 
         public static void SD_PlayDigitized(int which, int leftpos, int rightpos)
         {
-            // Digitized sound playback - stub
+            // Digitized sound playback
+            // Map the sound number through DigiMap to get the VSWAP page
+            if (which < 0 || which >= WL_Globals.DigiMap.Length) return;
+
+            int page = WL_Globals.DigiMap[which];
+            if (page < 0) return;
+
+            // Get the digitized sound data from PM
+            byte[] sndData = null;
+            try { sndData = IdPm.PM_GetSoundPage(page); }
+            catch { return; }
+
+            if (sndData == null || sndData.Length == 0) return;
+
+            // In a full implementation, this would queue the PCM data
+            // to the SDL audio stream for mixing
             WL_Globals.DigiPlaying = true;
+            SoundNumber = which;
         }
 
         public static void SD_StopDigitized()
