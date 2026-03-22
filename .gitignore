@@ -1,0 +1,12 @@
+build/
+node_modules/
+dist/
+bin/
+obj/
+*.o
+*.obj
+*.exe
+*.dll
+*.WL6
+*.dos
+.vs/
