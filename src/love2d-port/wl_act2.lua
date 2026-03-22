@@ -30,9 +30,13 @@ wl_act2.starthitpoints = {
 
 -- These will be defined after state tables
 local T_Stand, T_Path, T_Chase, T_Shoot, T_Bite, T_DogChase
-local T_Ghosts, T_Projectile, T_Schabb, T_SchabbThrow
-local T_Fake, T_FakeFire
+local T_Ghosts, T_Projectile, T_BJRun, T_BJJump, T_BJDone, T_BJYell
+local T_SchabbChase, T_SchabbThrow, T_GiftChase, T_GiftThrow
+local T_FakeChase, T_FakeFire, T_FatChase, T_FatRocket
+local T_BossChase, T_GretelChase
+local T_MechaChase, T_MechaShoot, T_HitlerChase, T_HitlerShoot
 local A_DeathScream, A_Smoke, A_Slurpie, A_HitlerMorph, A_MechaSound
+local A_StartDeathCam
 
 ---------------------------------------------------------------------------
 -- State machine definitions
@@ -175,7 +179,7 @@ wl_act2.s_pinkychase2  = S(false, wl_def.SPR_PINKY_W2, 10, nil, nil)
 wl_act2.s_clydechase1  = S(false, wl_def.SPR_CLYDE_W1, 10, nil, nil)
 wl_act2.s_clydechase2  = S(false, wl_def.SPR_CLYDE_W2, 10, nil, nil)
 
--- Boss/special enemy stand states (simplified - just standing)
+-- Boss stand states
 wl_act2.s_bossstand    = S(false, wl_def.SPR_BOSS_W1, 0, nil, nil)
 wl_act2.s_gretelstand  = S(false, wl_def.SPR_GRETEL_W1, 0, nil, nil)
 wl_act2.s_schabbstand  = S(false, wl_def.SPR_SCHABB_W1, 0, nil, nil)
@@ -183,6 +187,137 @@ wl_act2.s_giftstand    = S(false, wl_def.SPR_GIFT_W1, 0, nil, nil)
 wl_act2.s_fatstand     = S(false, wl_def.SPR_FAT_W1, 0, nil, nil)
 wl_act2.s_fakestand    = S(false, wl_def.SPR_FAKE_W1, 0, nil, nil)
 wl_act2.s_mechastand   = S(false, wl_def.SPR_MECHA_W1, 0, nil, nil)
+
+-- Hans (Boss) chase/shoot/die states
+wl_act2.s_bosschase1   = S(false, wl_def.SPR_BOSS_W1, 10, nil, nil)
+wl_act2.s_bosschase1s  = S(false, wl_def.SPR_BOSS_W1, 3, nil, nil)
+wl_act2.s_bosschase2   = S(false, wl_def.SPR_BOSS_W2, 8, nil, nil)
+wl_act2.s_bosschase3   = S(false, wl_def.SPR_BOSS_W3, 10, nil, nil)
+wl_act2.s_bosschase3s  = S(false, wl_def.SPR_BOSS_W3, 3, nil, nil)
+wl_act2.s_bosschase4   = S(false, wl_def.SPR_BOSS_W4, 8, nil, nil)
+wl_act2.s_bossshoot1   = S(false, wl_def.SPR_BOSS_SHOOT1, 30, nil, nil)
+wl_act2.s_bossshoot2   = S(false, wl_def.SPR_BOSS_SHOOT2, 10, nil, nil)
+wl_act2.s_bossshoot3   = S(false, wl_def.SPR_BOSS_SHOOT3, 10, nil, nil)
+wl_act2.s_bossdie1     = S(false, wl_def.SPR_BOSS_DIE1, 15, nil, nil)
+wl_act2.s_bossdie2     = S(false, wl_def.SPR_BOSS_DIE2, 15, nil, nil)
+wl_act2.s_bossdie3     = S(false, wl_def.SPR_BOSS_DIE3, 15, nil, nil)
+wl_act2.s_bossdead     = S(false, wl_def.SPR_BOSS_DEAD, 0, nil, nil)
+
+-- Schabbs chase/throw/die states
+wl_act2.s_schabbchase1  = S(false, wl_def.SPR_SCHABB_W1, 10, nil, nil)
+wl_act2.s_schabbchase1s = S(false, wl_def.SPR_SCHABB_W1, 3, nil, nil)
+wl_act2.s_schabbchase2  = S(false, wl_def.SPR_SCHABB_W2, 8, nil, nil)
+wl_act2.s_schabbchase3  = S(false, wl_def.SPR_SCHABB_W3, 10, nil, nil)
+wl_act2.s_schabbchase3s = S(false, wl_def.SPR_SCHABB_W3, 3, nil, nil)
+wl_act2.s_schabbchase4  = S(false, wl_def.SPR_SCHABB_W4, 8, nil, nil)
+wl_act2.s_schabbshoot1  = S(false, wl_def.SPR_SCHABB_SHOOT1, 30, nil, nil)
+wl_act2.s_schabbshoot2  = S(false, wl_def.SPR_SCHABB_SHOOT2, 10, nil, nil)
+wl_act2.s_schabbdie1    = S(false, wl_def.SPR_SCHABB_DIE1, 18, nil, nil)
+wl_act2.s_schabbdie2    = S(false, wl_def.SPR_SCHABB_DIE2, 18, nil, nil)
+wl_act2.s_schabbdie3    = S(false, wl_def.SPR_SCHABB_DIE3, 18, nil, nil)
+wl_act2.s_schabbdead    = S(false, wl_def.SPR_SCHABB_DEAD, 0, nil, nil)
+
+-- Needle (Schabbs projectile) states
+wl_act2.s_needle1 = S(false, wl_def.SPR_HYPO1, 6, nil, nil)
+wl_act2.s_needle2 = S(false, wl_def.SPR_HYPO2, 6, nil, nil)
+wl_act2.s_needle3 = S(false, wl_def.SPR_HYPO3, 6, nil, nil)
+wl_act2.s_needle4 = S(false, wl_def.SPR_HYPO4, 6, nil, nil)
+
+-- Gift chase/shoot/die states
+wl_act2.s_giftchase1  = S(false, wl_def.SPR_GIFT_W1, 10, nil, nil)
+wl_act2.s_giftchase1s = S(false, wl_def.SPR_GIFT_W1, 3, nil, nil)
+wl_act2.s_giftchase2  = S(false, wl_def.SPR_GIFT_W2, 8, nil, nil)
+wl_act2.s_giftchase3  = S(false, wl_def.SPR_GIFT_W3, 10, nil, nil)
+wl_act2.s_giftchase3s = S(false, wl_def.SPR_GIFT_W3, 3, nil, nil)
+wl_act2.s_giftchase4  = S(false, wl_def.SPR_GIFT_W4, 8, nil, nil)
+wl_act2.s_giftshoot1  = S(false, wl_def.SPR_GIFT_SHOOT1, 30, nil, nil)
+wl_act2.s_giftshoot2  = S(false, wl_def.SPR_GIFT_SHOOT2, 10, nil, nil)
+wl_act2.s_giftdie1    = S(false, wl_def.SPR_GIFT_DIE1, 18, nil, nil)
+wl_act2.s_giftdie2    = S(false, wl_def.SPR_GIFT_DIE2, 18, nil, nil)
+wl_act2.s_giftdie3    = S(false, wl_def.SPR_GIFT_DIE3, 18, nil, nil)
+wl_act2.s_giftdead    = S(false, wl_def.SPR_GIFT_DEAD, 0, nil, nil)
+
+-- Fat chase/shoot/die states
+wl_act2.s_fatchase1  = S(false, wl_def.SPR_FAT_W1, 10, nil, nil)
+wl_act2.s_fatchase1s = S(false, wl_def.SPR_FAT_W1, 3, nil, nil)
+wl_act2.s_fatchase2  = S(false, wl_def.SPR_FAT_W2, 8, nil, nil)
+wl_act2.s_fatchase3  = S(false, wl_def.SPR_FAT_W3, 10, nil, nil)
+wl_act2.s_fatchase3s = S(false, wl_def.SPR_FAT_W3, 3, nil, nil)
+wl_act2.s_fatchase4  = S(false, wl_def.SPR_FAT_W4, 8, nil, nil)
+wl_act2.s_fatshoot1  = S(false, wl_def.SPR_FAT_SHOOT1, 30, nil, nil)
+wl_act2.s_fatshoot2  = S(false, wl_def.SPR_FAT_SHOOT2, 10, nil, nil)
+wl_act2.s_fatshoot3  = S(false, wl_def.SPR_FAT_SHOOT3, 10, nil, nil)
+wl_act2.s_fatshoot4  = S(false, wl_def.SPR_FAT_SHOOT4, 10, nil, nil)
+wl_act2.s_fatdie1    = S(false, wl_def.SPR_FAT_DIE1, 18, nil, nil)
+wl_act2.s_fatdie2    = S(false, wl_def.SPR_FAT_DIE2, 18, nil, nil)
+wl_act2.s_fatdie3    = S(false, wl_def.SPR_FAT_DIE3, 18, nil, nil)
+wl_act2.s_fatdead    = S(false, wl_def.SPR_FAT_DEAD, 0, nil, nil)
+
+-- Fake Hitler chase/shoot/die states
+wl_act2.s_fakechase1  = S(false, wl_def.SPR_FAKE_W1, 10, nil, nil)
+wl_act2.s_fakechase1s = S(false, wl_def.SPR_FAKE_W1, 3, nil, nil)
+wl_act2.s_fakechase2  = S(false, wl_def.SPR_FAKE_W2, 8, nil, nil)
+wl_act2.s_fakechase3  = S(false, wl_def.SPR_FAKE_W3, 10, nil, nil)
+wl_act2.s_fakechase3s = S(false, wl_def.SPR_FAKE_W3, 3, nil, nil)
+wl_act2.s_fakechase4  = S(false, wl_def.SPR_FAKE_W4, 8, nil, nil)
+wl_act2.s_fakeshoot1  = S(false, wl_def.SPR_FAKE_SHOOT, 8, nil, nil)
+wl_act2.s_fakeshoot2  = S(false, wl_def.SPR_FIRE1, 15, nil, nil)
+wl_act2.s_fakeshoot3  = S(false, wl_def.SPR_FIRE2, 15, nil, nil)
+wl_act2.s_fakedie1    = S(false, wl_def.SPR_FAKE_DIE1, 10, nil, nil)
+wl_act2.s_fakedie2    = S(false, wl_def.SPR_FAKE_DIE2, 10, nil, nil)
+wl_act2.s_fakedie3    = S(false, wl_def.SPR_FAKE_DIE3, 10, nil, nil)
+wl_act2.s_fakedie4    = S(false, wl_def.SPR_FAKE_DIE4, 10, nil, nil)
+wl_act2.s_fakedie5    = S(false, wl_def.SPR_FAKE_DIE5, 10, nil, nil)
+wl_act2.s_fakedead    = S(false, wl_def.SPR_FAKE_DEAD, 0, nil, nil)
+
+-- Mecha Hitler chase/shoot/die states
+wl_act2.s_mechachase1  = S(false, wl_def.SPR_MECHA_W1, 10, nil, nil)
+wl_act2.s_mechachase1s = S(false, wl_def.SPR_MECHA_W1, 6, nil, nil)
+wl_act2.s_mechachase2  = S(false, wl_def.SPR_MECHA_W2, 8, nil, nil)
+wl_act2.s_mechachase3  = S(false, wl_def.SPR_MECHA_W3, 10, nil, nil)
+wl_act2.s_mechachase3s = S(false, wl_def.SPR_MECHA_W3, 6, nil, nil)
+wl_act2.s_mechachase4  = S(false, wl_def.SPR_MECHA_W4, 8, nil, nil)
+wl_act2.s_mechashoot1  = S(false, wl_def.SPR_MECHA_SHOOT1, 30, nil, nil)
+wl_act2.s_mechashoot2  = S(false, wl_def.SPR_MECHA_SHOOT2, 10, nil, nil)
+wl_act2.s_mechashoot3  = S(false, wl_def.SPR_MECHA_SHOOT3, 10, nil, nil)
+wl_act2.s_mechadie1    = S(false, wl_def.SPR_MECHA_DIE1, 10, nil, nil)
+wl_act2.s_mechadie2    = S(false, wl_def.SPR_MECHA_DIE2, 10, nil, nil)
+wl_act2.s_mechadie3    = S(false, wl_def.SPR_MECHA_DIE3, 10, nil, nil)
+wl_act2.s_mechadead    = S(false, wl_def.SPR_MECHA_DEAD, 0, nil, nil)
+
+-- Real Hitler chase/shoot/die states
+wl_act2.s_hitlerchase1  = S(false, wl_def.SPR_HITLER_W1, 6, nil, nil)
+wl_act2.s_hitlerchase1s = S(false, wl_def.SPR_HITLER_W1, 4, nil, nil)
+wl_act2.s_hitlerchase2  = S(false, wl_def.SPR_HITLER_W2, 2, nil, nil)
+wl_act2.s_hitlerchase3  = S(false, wl_def.SPR_HITLER_W3, 6, nil, nil)
+wl_act2.s_hitlerchase3s = S(false, wl_def.SPR_HITLER_W3, 4, nil, nil)
+wl_act2.s_hitlerchase4  = S(false, wl_def.SPR_HITLER_W4, 2, nil, nil)
+wl_act2.s_hitlershoot1  = S(false, wl_def.SPR_HITLER_SHOOT1, 30, nil, nil)
+wl_act2.s_hitlershoot2  = S(false, wl_def.SPR_HITLER_SHOOT2, 10, nil, nil)
+wl_act2.s_hitlershoot3  = S(false, wl_def.SPR_HITLER_SHOOT3, 10, nil, nil)
+wl_act2.s_hitlerdie1    = S(false, wl_def.SPR_HITLER_DIE1, 1, nil, nil)
+wl_act2.s_hitlerdie2    = S(false, wl_def.SPR_HITLER_DIE2, 10, nil, nil)
+wl_act2.s_hitlerdie3    = S(false, wl_def.SPR_HITLER_DIE3, 10, nil, nil)
+wl_act2.s_hitlerdie4    = S(false, wl_def.SPR_HITLER_DIE4, 10, nil, nil)
+wl_act2.s_hitlerdie5    = S(false, wl_def.SPR_HITLER_DIE5, 10, nil, nil)
+wl_act2.s_hitlerdie6    = S(false, wl_def.SPR_HITLER_DIE6, 10, nil, nil)
+wl_act2.s_hitlerdie7    = S(false, wl_def.SPR_HITLER_DIE7, 10, nil, nil)
+wl_act2.s_hitlerdead    = S(false, wl_def.SPR_HITLER_DEAD, 0, nil, nil)
+
+-- Gretel chase/shoot/die states
+wl_act2.s_gretelchase1  = S(false, wl_def.SPR_GRETEL_W1, 10, nil, nil)
+wl_act2.s_gretelchase1s = S(false, wl_def.SPR_GRETEL_W1, 3, nil, nil)
+wl_act2.s_gretelchase2  = S(false, wl_def.SPR_GRETEL_W2, 8, nil, nil)
+wl_act2.s_gretelchase3  = S(false, wl_def.SPR_GRETEL_W3, 10, nil, nil)
+wl_act2.s_gretelchase3s = S(false, wl_def.SPR_GRETEL_W3, 3, nil, nil)
+wl_act2.s_gretelchase4  = S(false, wl_def.SPR_GRETEL_W4, 8, nil, nil)
+wl_act2.s_gretelshoot1  = S(false, wl_def.SPR_GRETEL_SHOOT1, 30, nil, nil)
+wl_act2.s_gretelshoot2  = S(false, wl_def.SPR_GRETEL_SHOOT2, 10, nil, nil)
+wl_act2.s_gretelshoot3  = S(false, wl_def.SPR_GRETEL_SHOOT3, 10, nil, nil)
+wl_act2.s_greteldie1    = S(false, wl_def.SPR_GRETEL_DIE1, 15, nil, nil)
+wl_act2.s_greteldie2    = S(false, wl_def.SPR_GRETEL_DIE2, 15, nil, nil)
+wl_act2.s_greteldie3    = S(false, wl_def.SPR_GRETEL_DIE3, 15, nil, nil)
+wl_act2.s_greteldead    = S(false, wl_def.SPR_GRETEL_DEAD, 0, nil, nil)
 
 -- Projectile/explosion states
 wl_act2.s_rocket  = S(true, wl_def.SPR_ROCKET_1, 3, nil, nil)
@@ -243,6 +378,137 @@ local function wireStates()
     wl_act2.s_fatstand.next = wl_act2.s_fatstand; wl_act2.s_fatstand.think = T_Stand
     wl_act2.s_fakestand.next = wl_act2.s_fakestand; wl_act2.s_fakestand.think = T_Stand
     wl_act2.s_mechastand.next = wl_act2.s_mechastand; wl_act2.s_mechastand.think = T_Stand
+
+    -- Hans (Boss) chase/shoot/die
+    wl_act2.s_bosschase1.next = wl_act2.s_bosschase1s; wl_act2.s_bosschase1.think = T_BossChase
+    wl_act2.s_bosschase1s.next = wl_act2.s_bosschase2
+    wl_act2.s_bosschase2.next = wl_act2.s_bosschase3; wl_act2.s_bosschase2.think = T_BossChase
+    wl_act2.s_bosschase3.next = wl_act2.s_bosschase3s; wl_act2.s_bosschase3.think = T_BossChase
+    wl_act2.s_bosschase3s.next = wl_act2.s_bosschase4
+    wl_act2.s_bosschase4.next = wl_act2.s_bosschase1; wl_act2.s_bosschase4.think = T_BossChase
+    wl_act2.s_bossshoot1.next = wl_act2.s_bossshoot2
+    wl_act2.s_bossshoot2.next = wl_act2.s_bossshoot3; wl_act2.s_bossshoot2.action = T_Shoot
+    wl_act2.s_bossshoot3.next = wl_act2.s_bosschase1
+    wl_act2.s_bossdie1.next = wl_act2.s_bossdie2; wl_act2.s_bossdie1.action = A_DeathScream
+    wl_act2.s_bossdie2.next = wl_act2.s_bossdie3
+    wl_act2.s_bossdie3.next = wl_act2.s_bossdead
+    wl_act2.s_bossdead.next = wl_act2.s_bossdead
+
+    -- Schabbs chase/throw/die
+    wl_act2.s_schabbchase1.next = wl_act2.s_schabbchase1s; wl_act2.s_schabbchase1.think = T_SchabbChase
+    wl_act2.s_schabbchase1s.next = wl_act2.s_schabbchase2
+    wl_act2.s_schabbchase2.next = wl_act2.s_schabbchase3; wl_act2.s_schabbchase2.think = T_SchabbChase
+    wl_act2.s_schabbchase3.next = wl_act2.s_schabbchase3s; wl_act2.s_schabbchase3.think = T_SchabbChase
+    wl_act2.s_schabbchase3s.next = wl_act2.s_schabbchase4
+    wl_act2.s_schabbchase4.next = wl_act2.s_schabbchase1; wl_act2.s_schabbchase4.think = T_SchabbChase
+    wl_act2.s_schabbshoot1.next = wl_act2.s_schabbshoot2
+    wl_act2.s_schabbshoot2.next = wl_act2.s_schabbchase1; wl_act2.s_schabbshoot2.action = T_SchabbThrow
+    wl_act2.s_schabbdie1.next = wl_act2.s_schabbdie2; wl_act2.s_schabbdie1.action = A_DeathScream
+    wl_act2.s_schabbdie2.next = wl_act2.s_schabbdie3
+    wl_act2.s_schabbdie3.next = wl_act2.s_schabbdead
+    wl_act2.s_schabbdead.next = wl_act2.s_schabbdead
+
+    -- Needle projectile
+    wl_act2.s_needle1.next = wl_act2.s_needle2; wl_act2.s_needle1.think = T_Projectile
+    wl_act2.s_needle2.next = wl_act2.s_needle3; wl_act2.s_needle2.think = T_Projectile
+    wl_act2.s_needle3.next = wl_act2.s_needle4; wl_act2.s_needle3.think = T_Projectile
+    wl_act2.s_needle4.next = wl_act2.s_needle1; wl_act2.s_needle4.think = T_Projectile
+
+    -- Gift chase/shoot/die
+    wl_act2.s_giftchase1.next = wl_act2.s_giftchase1s; wl_act2.s_giftchase1.think = T_GiftChase
+    wl_act2.s_giftchase1s.next = wl_act2.s_giftchase2
+    wl_act2.s_giftchase2.next = wl_act2.s_giftchase3; wl_act2.s_giftchase2.think = T_GiftChase
+    wl_act2.s_giftchase3.next = wl_act2.s_giftchase3s; wl_act2.s_giftchase3.think = T_GiftChase
+    wl_act2.s_giftchase3s.next = wl_act2.s_giftchase4
+    wl_act2.s_giftchase4.next = wl_act2.s_giftchase1; wl_act2.s_giftchase4.think = T_GiftChase
+    wl_act2.s_giftshoot1.next = wl_act2.s_giftshoot2
+    wl_act2.s_giftshoot2.next = wl_act2.s_giftchase1; wl_act2.s_giftshoot2.action = T_GiftThrow
+    wl_act2.s_giftdie1.next = wl_act2.s_giftdie2; wl_act2.s_giftdie1.action = A_DeathScream
+    wl_act2.s_giftdie2.next = wl_act2.s_giftdie3
+    wl_act2.s_giftdie3.next = wl_act2.s_giftdead
+    wl_act2.s_giftdead.next = wl_act2.s_giftdead
+
+    -- Fat chase/shoot/die
+    wl_act2.s_fatchase1.next = wl_act2.s_fatchase1s; wl_act2.s_fatchase1.think = T_FatChase
+    wl_act2.s_fatchase1s.next = wl_act2.s_fatchase2
+    wl_act2.s_fatchase2.next = wl_act2.s_fatchase3; wl_act2.s_fatchase2.think = T_FatChase
+    wl_act2.s_fatchase3.next = wl_act2.s_fatchase3s; wl_act2.s_fatchase3.think = T_FatChase
+    wl_act2.s_fatchase3s.next = wl_act2.s_fatchase4
+    wl_act2.s_fatchase4.next = wl_act2.s_fatchase1; wl_act2.s_fatchase4.think = T_FatChase
+    wl_act2.s_fatshoot1.next = wl_act2.s_fatshoot2
+    wl_act2.s_fatshoot2.next = wl_act2.s_fatshoot3; wl_act2.s_fatshoot2.action = T_Shoot
+    wl_act2.s_fatshoot3.next = wl_act2.s_fatshoot4; wl_act2.s_fatshoot3.action = T_Shoot
+    wl_act2.s_fatshoot4.next = wl_act2.s_fatchase1; wl_act2.s_fatshoot4.action = T_Shoot
+    wl_act2.s_fatdie1.next = wl_act2.s_fatdie2; wl_act2.s_fatdie1.action = A_DeathScream
+    wl_act2.s_fatdie2.next = wl_act2.s_fatdie3
+    wl_act2.s_fatdie3.next = wl_act2.s_fatdead
+    wl_act2.s_fatdead.next = wl_act2.s_fatdead
+
+    -- Fake Hitler chase/shoot/die
+    wl_act2.s_fakechase1.next = wl_act2.s_fakechase1s; wl_act2.s_fakechase1.think = T_FakeChase
+    wl_act2.s_fakechase1s.next = wl_act2.s_fakechase2
+    wl_act2.s_fakechase2.next = wl_act2.s_fakechase3; wl_act2.s_fakechase2.think = T_FakeChase
+    wl_act2.s_fakechase3.next = wl_act2.s_fakechase3s; wl_act2.s_fakechase3.think = T_FakeChase
+    wl_act2.s_fakechase3s.next = wl_act2.s_fakechase4
+    wl_act2.s_fakechase4.next = wl_act2.s_fakechase1; wl_act2.s_fakechase4.think = T_FakeChase
+    wl_act2.s_fakeshoot1.next = wl_act2.s_fakeshoot2
+    wl_act2.s_fakeshoot2.next = wl_act2.s_fakeshoot3; wl_act2.s_fakeshoot2.action = T_FakeFire
+    wl_act2.s_fakeshoot3.next = wl_act2.s_fakechase1
+    wl_act2.s_fakedie1.next = wl_act2.s_fakedie2; wl_act2.s_fakedie1.action = A_DeathScream
+    wl_act2.s_fakedie2.next = wl_act2.s_fakedie3
+    wl_act2.s_fakedie3.next = wl_act2.s_fakedie4
+    wl_act2.s_fakedie4.next = wl_act2.s_fakedie5
+    wl_act2.s_fakedie5.next = wl_act2.s_fakedead
+    wl_act2.s_fakedead.next = wl_act2.s_fakedead
+
+    -- Mecha Hitler chase/shoot/die -> morphs to Real Hitler
+    wl_act2.s_mechachase1.next = wl_act2.s_mechachase1s; wl_act2.s_mechachase1.think = T_MechaChase
+    wl_act2.s_mechachase1s.next = wl_act2.s_mechachase2; wl_act2.s_mechachase1s.action = A_MechaSound
+    wl_act2.s_mechachase2.next = wl_act2.s_mechachase3; wl_act2.s_mechachase2.think = T_MechaChase
+    wl_act2.s_mechachase3.next = wl_act2.s_mechachase3s; wl_act2.s_mechachase3.think = T_MechaChase
+    wl_act2.s_mechachase3s.next = wl_act2.s_mechachase4; wl_act2.s_mechachase3s.action = A_MechaSound
+    wl_act2.s_mechachase4.next = wl_act2.s_mechachase1; wl_act2.s_mechachase4.think = T_MechaChase
+    wl_act2.s_mechashoot1.next = wl_act2.s_mechashoot2
+    wl_act2.s_mechashoot2.next = wl_act2.s_mechashoot3; wl_act2.s_mechashoot2.action = T_Shoot
+    wl_act2.s_mechashoot3.next = wl_act2.s_mechachase1
+    wl_act2.s_mechadie1.next = wl_act2.s_mechadie2; wl_act2.s_mechadie1.action = A_DeathScream
+    wl_act2.s_mechadie2.next = wl_act2.s_mechadie3
+    wl_act2.s_mechadie3.next = wl_act2.s_mechadead; wl_act2.s_mechadie3.action = A_HitlerMorph
+    wl_act2.s_mechadead.next = wl_act2.s_mechadead
+
+    -- Real Hitler chase/shoot/die
+    wl_act2.s_hitlerchase1.next = wl_act2.s_hitlerchase1s; wl_act2.s_hitlerchase1.think = T_HitlerChase
+    wl_act2.s_hitlerchase1s.next = wl_act2.s_hitlerchase2
+    wl_act2.s_hitlerchase2.next = wl_act2.s_hitlerchase3; wl_act2.s_hitlerchase2.think = T_HitlerChase
+    wl_act2.s_hitlerchase3.next = wl_act2.s_hitlerchase3s; wl_act2.s_hitlerchase3.think = T_HitlerChase
+    wl_act2.s_hitlerchase3s.next = wl_act2.s_hitlerchase4
+    wl_act2.s_hitlerchase4.next = wl_act2.s_hitlerchase1; wl_act2.s_hitlerchase4.think = T_HitlerChase
+    wl_act2.s_hitlershoot1.next = wl_act2.s_hitlershoot2
+    wl_act2.s_hitlershoot2.next = wl_act2.s_hitlershoot3; wl_act2.s_hitlershoot2.action = T_Shoot
+    wl_act2.s_hitlershoot3.next = wl_act2.s_hitlerchase1
+    wl_act2.s_hitlerdie1.next = wl_act2.s_hitlerdie2; wl_act2.s_hitlerdie1.action = A_DeathScream
+    wl_act2.s_hitlerdie2.next = wl_act2.s_hitlerdie3
+    wl_act2.s_hitlerdie3.next = wl_act2.s_hitlerdie4
+    wl_act2.s_hitlerdie4.next = wl_act2.s_hitlerdie5
+    wl_act2.s_hitlerdie5.next = wl_act2.s_hitlerdie6
+    wl_act2.s_hitlerdie6.next = wl_act2.s_hitlerdie7
+    wl_act2.s_hitlerdie7.next = wl_act2.s_hitlerdead; wl_act2.s_hitlerdie7.action = A_StartDeathCam
+    wl_act2.s_hitlerdead.next = wl_act2.s_hitlerdead
+
+    -- Gretel chase/shoot/die
+    wl_act2.s_gretelchase1.next = wl_act2.s_gretelchase1s; wl_act2.s_gretelchase1.think = T_GretelChase
+    wl_act2.s_gretelchase1s.next = wl_act2.s_gretelchase2
+    wl_act2.s_gretelchase2.next = wl_act2.s_gretelchase3; wl_act2.s_gretelchase2.think = T_GretelChase
+    wl_act2.s_gretelchase3.next = wl_act2.s_gretelchase3s; wl_act2.s_gretelchase3.think = T_GretelChase
+    wl_act2.s_gretelchase3s.next = wl_act2.s_gretelchase4
+    wl_act2.s_gretelchase4.next = wl_act2.s_gretelchase1; wl_act2.s_gretelchase4.think = T_GretelChase
+    wl_act2.s_gretelshoot1.next = wl_act2.s_gretelshoot2
+    wl_act2.s_gretelshoot2.next = wl_act2.s_gretelshoot3; wl_act2.s_gretelshoot2.action = T_Shoot
+    wl_act2.s_gretelshoot3.next = wl_act2.s_gretelchase1
+    wl_act2.s_greteldie1.next = wl_act2.s_greteldie2; wl_act2.s_greteldie1.action = A_DeathScream
+    wl_act2.s_greteldie2.next = wl_act2.s_greteldie3
+    wl_act2.s_greteldie3.next = wl_act2.s_greteldead
+    wl_act2.s_greteldead.next = wl_act2.s_greteldead
 
     -- Smoke/boom chain
     wl_act2.s_smoke1.next = wl_act2.s_smoke2
@@ -502,15 +768,332 @@ T_Ghosts = function(ob)
 end
 
 T_Projectile = function(ob)
-    -- Projectile movement handled elsewhere
+    local wl_state = require("wl_state")
+    local wl_main  = require("wl_main")
+    local wl_play  = require("wl_play")
+
+    -- Move projectile in its direction
+    local speed = 0x2000  -- projectile speed
+    if ob.distance > 0 then
+        wl_state.MoveObj(ob, speed * wl_main.tics)
+    end
+
+    -- Check for wall collision
+    local tx = rshift(ob.x, wl_def.TILESHIFT)
+    local ty = rshift(ob.y, wl_def.TILESHIFT)
+    if tx < 0 or tx >= wl_def.MAPSIZE or ty < 0 or ty >= wl_def.MAPSIZE then
+        -- Hit edge of map
+        wl_state.NewState(ob, wl_act2.s_boom1)
+        return
+    end
+    if wl_main.tilemap[tx][ty] ~= 0 then
+        -- Hit a wall
+        wl_state.NewState(ob, wl_act2.s_boom1)
+        return
+    end
+
+    -- Check for hitting player
+    if wl_play.player then
+        local dx = math.abs(ob.x - wl_play.player.x)
+        local dy = math.abs(ob.y - wl_play.player.y)
+        if dx < wl_def.MINACTORDIST and dy < wl_def.MINACTORDIST then
+            local wl_agent = require("wl_agent")
+            local damage = rshift(id_us.US_RndT(), 4) + 10
+            -- Needle does more damage
+            if ob.obclass == wl_def.needleobj then
+                damage = rshift(id_us.US_RndT(), 4) + 20
+            end
+            wl_agent.TakeDamage(damage, ob)
+            wl_state.NewState(ob, wl_act2.s_boom1)
+            return
+        end
+    end
+end
+
+-- Boss chase: same as T_Chase but uses boss-specific shoot states
+T_BossChase = function(ob)
+    local wl_state = require("wl_state")
+    local wl_main  = require("wl_main")
+    local wl_play  = require("wl_play")
+
+    if ob.distance > 0 then
+        wl_state.MoveObj(ob, ob.speed * wl_main.tics)
+        if ob.distance <= 0 then
+            ob.distance = 0
+            ob.tilex = rshift(ob.x, wl_def.TILESHIFT)
+            ob.tiley = rshift(ob.y, wl_def.TILESHIFT)
+            ob.x = lshift(ob.tilex, wl_def.TILESHIFT) + math.floor(wl_def.TILEGLOBAL / 2)
+            ob.y = lshift(ob.tiley, wl_def.TILESHIFT) + math.floor(wl_def.TILEGLOBAL / 2)
+        end
+        return
+    end
+
+    local dx = math.abs(ob.tilex - wl_play.player.tilex)
+    local dy = math.abs(ob.tiley - wl_play.player.tiley)
+    if wl_state.CheckLine(ob) and id_us.US_RndT() < 60 then
+        wl_state.NewState(ob, wl_act2.s_bossshoot1)
+        return
+    end
+    wl_state.SelectDodgeDir(ob)
+end
+
+T_SchabbChase = function(ob)
+    local wl_state = require("wl_state")
+    local wl_main  = require("wl_main")
+    local wl_play  = require("wl_play")
+
+    if ob.distance > 0 then
+        wl_state.MoveObj(ob, ob.speed * wl_main.tics)
+        if ob.distance <= 0 then ob.distance = 0 end
+        return
+    end
+    if wl_state.CheckLine(ob) and id_us.US_RndT() < 60 then
+        wl_state.NewState(ob, wl_act2.s_schabbshoot1)
+        return
+    end
+    wl_state.SelectDodgeDir(ob)
+end
+
+T_SchabbThrow = function(ob)
+    -- Spawn a needle projectile toward the player
+    local wl_state = require("wl_state")
+    local wl_play  = require("wl_play")
+    local id_sd_loc = require("id_sd")
+    local audiowl6 = require("audiowl6")
+
+    id_sd_loc.SD_PlaySound(audiowl6.SCHABBSTHROWSND)
+
+    local proj = wl_state.SpawnNewObj(ob.tilex, ob.tiley, wl_act2.s_needle1)
+    if proj then
+        proj.obclass = wl_def.needleobj
+        proj.speed = 0x2000
+        proj.flags = wl_def.FL_NEVERMARK
+        proj.active = wl_def.ac_yes
+        proj.distance = wl_def.TILEGLOBAL
+        -- Aim at player
+        if wl_play.player then
+            local dx = wl_play.player.tilex - ob.tilex
+            local dy = wl_play.player.tiley - ob.tiley
+            if math.abs(dx) > math.abs(dy) then
+                proj.dir = dx > 0 and wl_def.dir_east or wl_def.dir_west
+            else
+                proj.dir = dy > 0 and wl_def.dir_south or wl_def.dir_north
+            end
+        end
+    end
+end
+
+T_GiftChase = function(ob)
+    local wl_state = require("wl_state")
+    local wl_main  = require("wl_main")
+    if ob.distance > 0 then
+        wl_state.MoveObj(ob, ob.speed * wl_main.tics)
+        if ob.distance <= 0 then ob.distance = 0 end
+        return
+    end
+    if wl_state.CheckLine(ob) and id_us.US_RndT() < 60 then
+        wl_state.NewState(ob, wl_act2.s_giftshoot1)
+        return
+    end
+    wl_state.SelectDodgeDir(ob)
+end
+
+T_GiftThrow = function(ob)
+    -- Gift fires a rocket
+    local wl_state = require("wl_state")
+    local wl_play  = require("wl_play")
+    local id_sd_loc = require("id_sd")
+    local audiowl6 = require("audiowl6")
+
+    id_sd_loc.SD_PlaySound(audiowl6.MISSILEFIRESND)
+
+    local proj = wl_state.SpawnNewObj(ob.tilex, ob.tiley, wl_act2.s_rocket)
+    if proj then
+        proj.obclass = wl_def.rocketobj
+        proj.speed = 0x2000
+        proj.flags = wl_def.FL_NEVERMARK
+        proj.active = wl_def.ac_yes
+        proj.distance = wl_def.TILEGLOBAL
+        if wl_play.player then
+            local dx = wl_play.player.tilex - ob.tilex
+            local dy = wl_play.player.tiley - ob.tiley
+            if math.abs(dx) > math.abs(dy) then
+                proj.dir = dx > 0 and wl_def.dir_east or wl_def.dir_west
+            else
+                proj.dir = dy > 0 and wl_def.dir_south or wl_def.dir_north
+            end
+        end
+    end
+end
+
+T_FatChase = function(ob)
+    local wl_state = require("wl_state")
+    local wl_main  = require("wl_main")
+    if ob.distance > 0 then
+        wl_state.MoveObj(ob, ob.speed * wl_main.tics)
+        if ob.distance <= 0 then ob.distance = 0 end
+        return
+    end
+    if wl_state.CheckLine(ob) and id_us.US_RndT() < 60 then
+        wl_state.NewState(ob, wl_act2.s_fatshoot1)
+        return
+    end
+    wl_state.SelectDodgeDir(ob)
+end
+
+T_FakeChase = function(ob)
+    -- Fake Hitler: fire cloak (shoots fire projectiles)
+    local wl_state = require("wl_state")
+    local wl_main  = require("wl_main")
+    if ob.distance > 0 then
+        wl_state.MoveObj(ob, ob.speed * wl_main.tics)
+        if ob.distance <= 0 then ob.distance = 0 end
+        return
+    end
+    if wl_state.CheckLine(ob) and id_us.US_RndT() < 60 then
+        wl_state.NewState(ob, wl_act2.s_fakeshoot1)
+        return
+    end
+    wl_state.SelectDodgeDir(ob)
+end
+
+T_FakeFire = function(ob)
+    -- Fake Hitler shoots fire
+    local wl_state = require("wl_state")
+    local wl_play  = require("wl_play")
+    local id_sd_loc = require("id_sd")
+    local audiowl6 = require("audiowl6")
+
+    id_sd_loc.SD_PlaySound(audiowl6.FLAMETHROWERSND)
+
+    local proj = wl_state.SpawnNewObj(ob.tilex, ob.tiley, wl_act2.s_rocket)
+    if proj then
+        proj.obclass = wl_def.fireobj
+        proj.speed = 0x1200
+        proj.flags = wl_def.FL_NEVERMARK
+        proj.active = wl_def.ac_yes
+        proj.distance = wl_def.TILEGLOBAL
+        if wl_play.player then
+            local dx = wl_play.player.tilex - ob.tilex
+            local dy = wl_play.player.tiley - ob.tiley
+            if math.abs(dx) > math.abs(dy) then
+                proj.dir = dx > 0 and wl_def.dir_east or wl_def.dir_west
+            else
+                proj.dir = dy > 0 and wl_def.dir_south or wl_def.dir_north
+            end
+        end
+    end
+end
+
+T_MechaChase = function(ob)
+    local wl_state = require("wl_state")
+    local wl_main  = require("wl_main")
+    if ob.distance > 0 then
+        wl_state.MoveObj(ob, ob.speed * wl_main.tics)
+        if ob.distance <= 0 then ob.distance = 0 end
+        return
+    end
+    if wl_state.CheckLine(ob) and id_us.US_RndT() < 64 then
+        wl_state.NewState(ob, wl_act2.s_mechashoot1)
+        return
+    end
+    wl_state.SelectDodgeDir(ob)
+end
+
+T_HitlerChase = function(ob)
+    -- Real Hitler is faster and shoots more
+    local wl_state = require("wl_state")
+    local wl_main  = require("wl_main")
+    if ob.distance > 0 then
+        wl_state.MoveObj(ob, ob.speed * wl_main.tics)
+        if ob.distance <= 0 then ob.distance = 0 end
+        return
+    end
+    if wl_state.CheckLine(ob) and id_us.US_RndT() < 80 then
+        wl_state.NewState(ob, wl_act2.s_hitlershoot1)
+        return
+    end
+    wl_state.SelectDodgeDir(ob)
+end
+
+T_GretelChase = function(ob)
+    local wl_state = require("wl_state")
+    local wl_main  = require("wl_main")
+    if ob.distance > 0 then
+        wl_state.MoveObj(ob, ob.speed * wl_main.tics)
+        if ob.distance <= 0 then ob.distance = 0 end
+        return
+    end
+    if wl_state.CheckLine(ob) and id_us.US_RndT() < 60 then
+        wl_state.NewState(ob, wl_act2.s_gretelshoot1)
+        return
+    end
+    wl_state.SelectDodgeDir(ob)
 end
 
 A_DeathScream = function(ob)
-    -- Play death sound (simplified)
+    -- Play appropriate death sound based on enemy type
+    local id_sd_loc = require("id_sd")
+    local audiowl6 = require("audiowl6")
+
+    if ob.obclass == wl_def.guardobj then
+        local scream = audiowl6.DEATHSCREAM1SND + (id_us.US_RndT() % 6)
+        id_sd_loc.SD_PlaySound(scream)
+    elseif ob.obclass == wl_def.officerobj then
+        id_sd_loc.SD_PlaySound(audiowl6.NEINSOVASSND)
+    elseif ob.obclass == wl_def.ssobj then
+        id_sd_loc.SD_PlaySound(audiowl6.LEBENSND)
+    elseif ob.obclass == wl_def.dogobj then
+        id_sd_loc.SD_PlaySound(audiowl6.DOGDEATHSND)
+    elseif ob.obclass == wl_def.mutantobj then
+        id_sd_loc.SD_PlaySound(audiowl6.AHHHGSND)
+    elseif ob.obclass == wl_def.bossobj then
+        id_sd_loc.SD_PlaySound(audiowl6.DIESND)
+    elseif ob.obclass == wl_def.schabbobj then
+        id_sd_loc.SD_PlaySound(audiowl6.SCHABBSHASND)
+    elseif ob.obclass == wl_def.mechahitlerobj then
+        id_sd_loc.SD_PlaySound(audiowl6.HITLERHASND)
+    elseif ob.obclass == wl_def.realhitlerobj then
+        id_sd_loc.SD_PlaySound(audiowl6.HITLERHASND)
+    else
+        id_sd_loc.SD_PlaySound(audiowl6.DEATHSCREAM1SND)
+    end
 end
 
 A_Smoke = function(ob)
-    -- Spawn smoke behind rocket
+    -- Spawn smoke behind rocket (visual only)
+    -- Simplified: no-op (smoke states handle it if spawned)
+end
+
+A_MechaSound = function(ob)
+    local id_sd_loc = require("id_sd")
+    local audiowl6 = require("audiowl6")
+    id_sd_loc.SD_PlaySound(audiowl6.MECHSTEPSND)
+end
+
+A_HitlerMorph = function(ob)
+    -- Mecha Hitler dies -> spawn Real Hitler at same position
+    local wl_state = require("wl_state")
+    local wl_main  = require("wl_main")
+
+    -- Change the object class to real hitler and reset hitpoints
+    ob.obclass = wl_def.realhitlerobj
+    ob.hitpoints = wl_act2.GetHitPoints(wl_def.en_hitler, wl_main.gamestate.difficulty)
+    ob.speed = wl_def.SPDPATROL * 3  -- Real Hitler is fast
+    ob.flags = bor(ob.flags, wl_def.FL_SHOOTABLE)
+    wl_state.NewState(ob, wl_act2.s_hitlerchase1)
+end
+
+A_StartDeathCam = function(ob)
+    -- Start the death camera sequence (simplified: just mark victory)
+    local wl_main = require("wl_main")
+    wl_main.gamestate.victoryflag = true
+end
+
+A_Slurpie = function(ob)
+    local id_sd_loc = require("id_sd")
+    local audiowl6 = require("audiowl6")
+    id_sd_loc.SD_PlaySound(audiowl6.SLURPIESND)
 end
 
 ---------------------------------------------------------------------------
@@ -568,7 +1151,22 @@ wl_act2.T_Bite = T_Bite
 wl_act2.T_DogChase = T_DogChase
 wl_act2.T_Ghosts = T_Ghosts
 wl_act2.T_Projectile = T_Projectile
+wl_act2.T_BossChase = T_BossChase
+wl_act2.T_SchabbChase = T_SchabbChase
+wl_act2.T_SchabbThrow = T_SchabbThrow
+wl_act2.T_GiftChase = T_GiftChase
+wl_act2.T_GiftThrow = T_GiftThrow
+wl_act2.T_FatChase = T_FatChase
+wl_act2.T_FakeChase = T_FakeChase
+wl_act2.T_FakeFire = T_FakeFire
+wl_act2.T_MechaChase = T_MechaChase
+wl_act2.T_HitlerChase = T_HitlerChase
+wl_act2.T_GretelChase = T_GretelChase
 wl_act2.A_DeathScream = A_DeathScream
 wl_act2.A_Smoke = A_Smoke
+wl_act2.A_MechaSound = A_MechaSound
+wl_act2.A_HitlerMorph = A_HitlerMorph
+wl_act2.A_StartDeathCam = A_StartDeathCam
+wl_act2.A_Slurpie = A_Slurpie
 
 return wl_act2

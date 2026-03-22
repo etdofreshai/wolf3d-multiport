@@ -21,6 +21,7 @@ import {
 import * as Play from './wl_play';
 import { OperateDoor, PushWall, ConnectAreas } from './wl_act1';
 import { soundnames } from './audiowl6';
+import { graphicnums } from './gfxv_wl6';
 import { bt } from './wl_def';
 
 //===========================================================================
@@ -313,11 +314,63 @@ function T_Attack(ob: objtype): void {
 // HUD drawing functions
 //===========================================================================
 
+// Status bar Y position (status bar starts at scanline 160)
+const STATUS_Y = 160;
+
+//===========================================================================
+// StatusDrawPic - draw a graphic in the status bar area
+//===========================================================================
+
+function StatusDrawPic(x: number, y: number, picnum: number): void {
+    // x,y are in status bar tile coords: x*8 = pixel X, y = pixel Y offset from status bar top
+    VH.VWB_DrawPic(x * 8, STATUS_Y + y, picnum);
+}
+
+//===========================================================================
+// LatchNumber - right-justify and pad with blanks, draw using N_0PIC digits
+//===========================================================================
+
+function LatchNumber(x: number, y: number, width: number, num: number): void {
+    const str = num.toString();
+    let length = str.length;
+    let cx = x;
+    let w = width;
+
+    // Pad with blank digits
+    while (length < w) {
+        StatusDrawPic(cx, y, graphicnums.N_BLANKPIC);
+        cx++;
+        w--;
+    }
+
+    // Draw digits (right-most 'width' digits if number is wider)
+    const startC = length <= w ? 0 : length - w;
+    for (let c = startC; c < length; c++) {
+        const digit = str.charCodeAt(c) - 48; // '0' = 48
+        StatusDrawPic(cx, y, graphicnums.N_0PIC + digit);
+        cx++;
+    }
+}
+
+//===========================================================================
+// DrawFace
+//===========================================================================
+
 export function DrawFace(): void {
-    // Draw the BJ face in the status bar
+    if (gamestate.health > 0) {
+        // Face graphic: FACE1APIC + 3*((100-health)/16) + faceframe
+        // Health bands: 100-85=0, 84-69=1, ..., 0=7 (clamped at 7)
+        const band = Math.min(7, ((100 - gamestate.health) / 16) | 0);
+        StatusDrawPic(17, 4, graphicnums.FACE1APIC + 3 * band + gamestate.faceframe);
+    } else {
+        // Dead face
+        StatusDrawPic(17, 4, graphicnums.FACE8APIC);
+    }
 }
 
 function UpdateFace(): void {
+    if (SD.SD_SoundPlaying() === soundnames.GETGATLINGSND) return;
+
     facecount += tics;
     if (facecount > US.US_RndT()) {
         gamestate.faceframe = US.US_RndT() >> 6;
@@ -327,32 +380,70 @@ function UpdateFace(): void {
     }
 }
 
+//===========================================================================
+// DrawHealth
+//===========================================================================
+
 export function DrawHealth(): void {
-    // Draw health number in status bar
+    LatchNumber(21, 16, 3, gamestate.health);
 }
+
+//===========================================================================
+// DrawLevel
+//===========================================================================
 
 export function DrawLevel(): void {
-    // Draw level number
+    LatchNumber(2, 16, 2, gamestate.mapon + 1);
 }
+
+//===========================================================================
+// DrawLives
+//===========================================================================
 
 export function DrawLives(): void {
-    // Draw lives count
+    LatchNumber(14, 16, 1, gamestate.lives);
 }
+
+//===========================================================================
+// DrawScore
+//===========================================================================
 
 export function DrawScore(): void {
-    // Draw score
+    LatchNumber(6, 16, 6, gamestate.score);
 }
+
+//===========================================================================
+// DrawWeapon
+//===========================================================================
 
 export function DrawWeapon(): void {
-    // Draw weapon indicator
+    StatusDrawPic(32, 8, graphicnums.KNIFEPIC + gamestate.weapon);
 }
+
+//===========================================================================
+// DrawKeys
+//===========================================================================
 
 export function DrawKeys(): void {
-    // Draw key indicators
+    if (gamestate.keys & 1) {
+        StatusDrawPic(30, 4, graphicnums.GOLDKEYPIC);
+    } else {
+        StatusDrawPic(30, 4, graphicnums.NOKEYPIC);
+    }
+
+    if (gamestate.keys & 2) {
+        StatusDrawPic(30, 20, graphicnums.SILVERKEYPIC);
+    } else {
+        StatusDrawPic(30, 20, graphicnums.NOKEYPIC);
+    }
 }
 
+//===========================================================================
+// DrawAmmo
+//===========================================================================
+
 export function DrawAmmo(): void {
-    // Draw ammo count
+    LatchNumber(27, 16, 2, gamestate.ammo);
 }
 
 //===========================================================================
@@ -372,10 +463,16 @@ export function TakeDamage(points: number, attacker: objtype | null): void {
     if (gamestate.health <= 0) {
         gamestate.health = 0;
         Play.setPlaystate(exit_t.ex_died);
+        // killerobj set in wl_play
     }
+
+    Play.StartDamageFlash(points);
+
+    gotgatgun = 0;
 
     DrawHealth();
     DrawFace();
+
     SD.SD_PlaySound(soundnames.TAKEDAMAGESND);
 }
 

@@ -106,9 +106,25 @@ namespace Wolf3D
 
         public static void DrawFace()
         {
+            if (IdSd.SD_SoundPlaying() == (ushort)soundnames.GETGATLINGSND)
+            {
+                // Show the "got gatling" face
+                StatusDrawPic(17, 4, (int)graphicnums.GOTGATLINGPIC);
+                return;
+            }
+
             if (WL_Globals.gamestate.health > 0)
             {
+                if (gotgatgun != 0 && IdUs.US_RndT() < 30)
+                {
+                    // Randomly show gotgatling face after picking up chaingun
+                    StatusDrawPic(17, 4, (int)graphicnums.GOTGATLINGPIC);
+                    return;
+                }
+
                 int faceIdx = 3 * ((100 - WL_Globals.gamestate.health) / 16) + WL_Globals.gamestate.faceframe;
+                if (faceIdx < 0) faceIdx = 0;
+                if (faceIdx > 23) faceIdx = 23; // 8 damage levels * 3 frames - 1
                 StatusDrawPic(17, 4, (int)graphicnums.FACE1APIC + faceIdx);
             }
             else

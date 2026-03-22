@@ -378,10 +378,93 @@ end
 ---------------------------------------------------------------------------
 
 function id_us.US_LineInput(x, y, buf, def, escok, maxchars, maxwidth)
-    -- Simplified line input
-    -- Returns true if input was accepted, false if ESC
-    -- For now, just return the default
-    return true, def or ""
+    -- Text entry with cursor, backspace, and character input
+    -- Returns ok (bool), result_string
+    local id_vh = require("id_vh")
+    local id_in = require("id_in")
+    local id_sd = require("id_sd")
+
+    local result = def or ""
+    maxchars = maxchars or 31
+    maxwidth = maxwidth or 200
+    local cursor_visible = true
+    local cursor_timer = 0
+    local CURSOR_BLINK_RATE = 25  -- tics
+
+    -- Save font state
+    local saved_fc = id_vh.fontcolor
+    local saved_bc = id_vh.backcolor
+
+    id_vh.fontnumber = 0
+    id_vh.fontcolor = 0x0f
+    id_vh.backcolor = 0x00
+
+    id_in.IN_ClearKeysDown()
+
+    while true do
+        -- Draw current text with cursor
+        id_vh.VWB_Bar(x, y, maxwidth, 10, 0x00)
+        id_vh.px = x
+        id_vh.py = y
+        id_vh.VWB_DrawPropString(result)
+
+        -- Draw cursor
+        if cursor_visible then
+            id_vh.VWB_Bar(id_vh.px, y, 1, 10, 0x0f)
+        end
+
+        id_vh.VW_UpdateScreen()
+
+        -- Process input
+        id_in.IN_WaitAndProcessEvents()
+
+        -- Blink cursor
+        cursor_timer = cursor_timer + 1
+        if cursor_timer >= CURSOR_BLINK_RATE then
+            cursor_timer = 0
+            cursor_visible = not cursor_visible
+        end
+
+        local scan = id_in.LastScan
+        if scan == id_in.sc_Return then
+            id_in.IN_ClearKey(id_in.sc_Return)
+            id_vh.fontcolor = saved_fc
+            id_vh.backcolor = saved_bc
+            return true, result
+        elseif scan == id_in.sc_Escape then
+            id_in.IN_ClearKey(id_in.sc_Escape)
+            id_vh.fontcolor = saved_fc
+            id_vh.backcolor = saved_bc
+            if escok then
+                return false, def or ""
+            end
+            return true, def or ""
+        elseif scan == id_in.sc_BackSpace then
+            id_in.IN_ClearKey(id_in.sc_BackSpace)
+            if #result > 0 then
+                result = string.sub(result, 1, #result - 1)
+            end
+            cursor_visible = true
+            cursor_timer = 0
+        else
+            -- Check for printable character via LastASCII
+            local ascii = id_in.LastASCII or 0
+            if ascii >= 32 and ascii < 127 and #result < maxchars then
+                -- Check if adding character would exceed max width
+                local test_str = result .. string.char(ascii)
+                local w, _ = id_vh.VW_MeasurePropString(test_str)
+                if w <= maxwidth then
+                    result = test_str
+                end
+                cursor_visible = true
+                cursor_timer = 0
+            end
+            id_in.LastASCII = 0
+            if scan ~= 0 then
+                id_in.IN_ClearKey(scan)
+            end
+        end
+    end
 end
 
 ---------------------------------------------------------------------------

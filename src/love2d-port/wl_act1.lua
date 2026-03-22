@@ -284,25 +284,69 @@ function wl_act1.CloseDoor(door)
     local wl_game = require("wl_game")
     local wl_main = require("wl_main")
     local wl_play = require("wl_play")
+    local audiowl6 = require("audiowl6")
 
     local tilex = wl_game.doorobjlist[door].tilex
     local tiley = wl_game.doorobjlist[door].tiley
 
+    -- Check if something is blocking the door
     if wl_main.actorat[tilex][tiley] and wl_main.actorat[tilex][tiley] ~= bor(door, 0x80) then
         return  -- something blocking
     end
 
+    -- Check if player is in the doorway
     if wl_play.player and wl_play.player.tilex == tilex and wl_play.player.tiley == tiley then
         return
     end
 
+    -- Check for any actors in the doorway
+    local ob = wl_play.player and wl_play.player.next or nil
+    while ob do
+        if ob.tilex == tilex and ob.tiley == tiley then
+            return  -- actor blocking
+        end
+        ob = ob.next
+    end
+
     wl_game.doorobjlist[door].action = wl_def.dr_closing
     wl_main.actorat[tilex][tiley] = bor(door, 0x80)
+
+    -- Disconnect areas when door closes
+    local id_ca = require("id_ca")
+    if wl_game.doorobjlist[door].vertical then
+        local dy = tiley
+        if dy > 0 and dy < wl_def.MAPSIZE - 1 and id_ca.mapsegs and id_ca.mapsegs[1] then
+            local a1_idx = wl_main.farmapylookup[dy] + tilex + 1
+            local a2_idx = wl_main.farmapylookup[dy + 2] + tilex + 1
+            local area1 = (id_ca.mapsegs[1][a1_idx] or wl_def.AREATILE) - wl_def.AREATILE
+            local area2 = (id_ca.mapsegs[1][a2_idx] or wl_def.AREATILE) - wl_def.AREATILE
+            if area1 >= 0 and area1 < wl_def.NUMAREAS and area2 >= 0 and area2 < wl_def.NUMAREAS then
+                wl_game.areaconnect[area1][area2] = math.max(0, (wl_game.areaconnect[area1][area2] or 0) - 1)
+                wl_game.areaconnect[area2][area1] = math.max(0, (wl_game.areaconnect[area2][area1] or 0) - 1)
+            end
+        end
+    else
+        local dx = tilex
+        if dx > 0 and dx < wl_def.MAPSIZE - 1 and id_ca.mapsegs and id_ca.mapsegs[1] then
+            local a1_idx = wl_main.farmapylookup[tiley + 1] + dx
+            local a2_idx = wl_main.farmapylookup[tiley + 1] + dx + 2
+            local area1 = (id_ca.mapsegs[1][a1_idx] or wl_def.AREATILE) - wl_def.AREATILE
+            local area2 = (id_ca.mapsegs[1][a2_idx] or wl_def.AREATILE) - wl_def.AREATILE
+            if area1 >= 0 and area1 < wl_def.NUMAREAS and area2 >= 0 and area2 < wl_def.NUMAREAS then
+                wl_game.areaconnect[area1][area2] = math.max(0, (wl_game.areaconnect[area1][area2] or 0) - 1)
+                wl_game.areaconnect[area2][area1] = math.max(0, (wl_game.areaconnect[area2][area1] or 0) - 1)
+            end
+        end
+    end
+    wl_act1.ConnectAreas()
+
+    id_sd.SD_PlaySound(audiowl6.CLOSEDOORSND)
 end
 
 function wl_act1.OperateDoor(door)
     local wl_game = require("wl_game")
     local wl_main = require("wl_main")
+    local audiowl6 = require("audiowl6")
 
     local action = wl_game.doorobjlist[door].action
     local lock = wl_game.doorobjlist[door].lock
@@ -310,16 +354,18 @@ function wl_act1.OperateDoor(door)
     if lock >= wl_def.dr_lock1 and lock <= wl_def.dr_lock4 then
         local key_bit = lshift(1, lock - wl_def.dr_lock1)
         if band(wl_main.gamestate.keys, key_bit) == 0 then
-            -- No key
-            id_sd.SD_PlaySound(0)  -- locked sound
+            -- No key - play locked sound
+            id_sd.SD_PlaySound(audiowl6.NOWAYSND)
             return
         end
     end
 
     if action == wl_def.dr_open then
         -- Already open - just reset the countdown
+        wl_game.doorobjlist[door].ticcount = 0
     elseif action == wl_def.dr_closed then
         wl_act1.OpenDoor(door)
+        id_sd.SD_PlaySound(audiowl6.OPENDOORSND)
     end
 end
 
@@ -455,7 +501,8 @@ function wl_act1.PushWall(checkx, checky, dir)
 
     wl_main.gamestate.secretcount = wl_main.gamestate.secretcount + 1
 
-    id_sd.SD_PlaySound(0)  -- pushwall sound
+    local audiowl6 = require("audiowl6")
+    id_sd.SD_PlaySound(audiowl6.PUSHWALLSND)
 end
 
 function wl_act1.MovePWalls()

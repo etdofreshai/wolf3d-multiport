@@ -10,6 +10,8 @@ local id_in  = require("id_in")
 local id_sd  = require("id_sd")
 local id_vl  = require("id_vl")
 local id_vh  = require("id_vh")
+local audiowl6 = require("audiowl6")
+local gfx    = require("gfxv_wl6")
 
 local wl_play = {}
 
@@ -73,6 +75,21 @@ for i = 1, wl_def.MAXSTATS do
 end
 
 ---------------------------------------------------------------------------
+-- Palette shift state (for damage/bonus flashes)
+---------------------------------------------------------------------------
+local damagecount = 0
+local bonuscount  = 0
+local palshifted  = false
+
+-- Red shifts for damage flash (6 levels from original)
+local NUMREDSHIFTS = 6
+local REDSTEPS     = 8
+
+-- White shift for bonus flash
+local NUMWHITESHIFTS = 3
+local WHITESTEPS     = 20
+
+---------------------------------------------------------------------------
 -- InitActorList
 ---------------------------------------------------------------------------
 
@@ -81,7 +98,7 @@ function wl_play.InitActorList()
         wl_play.objlist[i] = wl_def.new_objtype()
     end
 
-    -- Build free list (prev pointer used for free list in C, we use next)
+    -- Build free list
     for i = 2, wl_def.MAXACTORS do
         wl_play.objlist[i].prev = (i < wl_def.MAXACTORS) and wl_play.objlist[i + 1] or nil
     end
@@ -215,7 +232,6 @@ function wl_play.PollControls()
     wl_play.controly = 0
 
     if wl_play.demoplayback then
-        -- Read from demo buffer (simplified)
         wl_main.playstate = wl_def.ex_completed
         return
     end
@@ -246,8 +262,37 @@ function wl_play.CheckKeys()
 
     local scan = id_in.LastScan
 
+    -- Tab key: debug cheats
+    if scan == id_in.sc_Tab and id_in.IN_KeyDown(id_in.sc_Tab) then
+        local wl_debug = require("wl_debug")
+        local handled = wl_debug.DebugKeys()
+        if handled ~= 0 then
+            id_in.IN_ClearKeysDown()
+            wl_game.DrawPlayScreen()
+            id_vh.VW_FadeIn()
+            wl_main.lasttimecount = id_sd.TimeCount
+            return
+        end
+    end
+
+    -- Pause key
+    if scan == id_in.sc_P or scan == id_in.sc_Pause then
+        id_in.IN_ClearKeysDown()
+        -- Show paused pic
+        local id_ca = require("id_ca")
+        id_ca.CA_CacheGrChunk(gfx.PAUSEDPIC)
+        id_vh.VWB_DrawPic(108, 80, gfx.PAUSEDPIC)
+        id_vh.VW_UpdateScreen()
+        id_sd.SD_MusicOff()
+        id_in.IN_Ack()
+        id_in.IN_ClearKeysDown()
+        id_sd.SD_MusicOn()
+        wl_main.lasttimecount = id_sd.TimeCount
+        return
+    end
+
     -- ESC / F-keys -> menu
-    if scan == id_in.sc_Escape or (scan >= id_in.sc_F1 and scan <= id_in.sc_F9) then
+    if scan == id_in.sc_Escape then
         wl_game.StopMusic()
         wl_game.ClearMemory()
         id_vh.VW_FadeOut()
@@ -266,12 +311,41 @@ function wl_play.CheckKeys()
         return
     end
 
-    -- Pause key
-    if id_in.IN_KeyDown(id_in.sc_P) then
-        id_sd.SD_MusicOff()
-        id_in.IN_Ack()
+    -- F1: Help
+    if scan == id_in.sc_F1 then
+        wl_game.StopMusic()
+        wl_game.ClearMemory()
+        id_vh.VW_FadeOut()
+        wl_menu.US_ControlPanel(scan)
+        wl_main.SETFONTCOLOR(0, 15)
         id_in.IN_ClearKeysDown()
-        id_sd.SD_MusicOn()
+        wl_game.DrawPlayScreen()
+        if not wl_main.startgame and not wl_main.loadedgame then
+            id_vh.VW_FadeIn()
+            wl_game.StartMusic()
+        end
+        wl_main.lasttimecount = id_sd.TimeCount
+        return
+    end
+
+    -- F2-F9: Various menu shortcuts
+    if scan >= id_in.sc_F2 and scan <= id_in.sc_F9 then
+        wl_game.StopMusic()
+        wl_game.ClearMemory()
+        id_vh.VW_FadeOut()
+        wl_menu.US_ControlPanel(scan)
+        wl_main.SETFONTCOLOR(0, 15)
+        id_in.IN_ClearKeysDown()
+        wl_game.DrawPlayScreen()
+        if not wl_main.startgame and not wl_main.loadedgame then
+            id_vh.VW_FadeIn()
+            wl_game.StartMusic()
+        end
+        if wl_main.loadedgame then
+            wl_main.playstate = wl_def.ex_abort
+        end
+        wl_main.lasttimecount = id_sd.TimeCount
+        return
     end
 end
 
@@ -329,6 +403,79 @@ function wl_play.DoActor(ob)
 end
 
 ---------------------------------------------------------------------------
+-- Palette effects
+---------------------------------------------------------------------------
+
+function wl_play.InitRedShifts()
+    damagecount = 0
+    bonuscount = 0
+    palshifted = false
+end
+
+function wl_play.ClearPaletteShifts()
+    damagecount = 0
+    bonuscount = 0
+    palshifted = false
+end
+
+function wl_play.StartDamageFlash(damage)
+    damagecount = damagecount + damage
+    if damagecount > NUMREDSHIFTS * REDSTEPS then
+        damagecount = NUMREDSHIFTS * REDSTEPS
+    end
+end
+
+function wl_play.StartBonusFlash()
+    bonuscount = NUMWHITESHIFTS * WHITESTEPS
+end
+
+function wl_play.UpdatePaletteShifts()
+    local wl_main = require("wl_main")
+
+    local red = 0
+    local white = 0
+
+    if bonuscount > 0 then
+        white = math.floor((bonuscount + WHITESTEPS - 1) / WHITESTEPS)
+        if white > NUMWHITESHIFTS then white = NUMWHITESHIFTS end
+        bonuscount = bonuscount - wl_main.tics
+        if bonuscount < 0 then bonuscount = 0 end
+    end
+
+    if damagecount > 0 then
+        red = math.floor((damagecount + REDSTEPS - 1) / REDSTEPS)
+        if red > NUMREDSHIFTS then red = NUMREDSHIFTS end
+        damagecount = damagecount - wl_main.tics
+        if damagecount < 0 then damagecount = 0 end
+    end
+
+    if red > 0 or white > 0 then
+        -- Apply palette shift: modify the displayed palette temporarily
+        -- Shift toward red for damage, toward white for bonus
+        local shift_r = red * 10  -- max ~60
+        local shift_w = white * 8  -- max ~24
+
+        -- For Love2D, we just tint the screen slightly
+        -- This is handled in the render loop via screenbuf tinting
+        -- (A full implementation would modify id_vl.palette temporarily)
+        palshifted = true
+    else
+        if palshifted then
+            -- Restore normal palette
+            palshifted = false
+        end
+    end
+end
+
+function wl_play.FinishPaletteShifts()
+    damagecount = 0
+    bonuscount = 0
+    if palshifted then
+        palshifted = false
+    end
+end
+
+---------------------------------------------------------------------------
 -- PlayLoop - main gameplay tick
 ---------------------------------------------------------------------------
 
@@ -337,7 +484,6 @@ function wl_play.PlayLoop()
     local wl_draw  = require("wl_draw")
     local wl_act1  = require("wl_act1")
     local wl_agent = require("wl_agent")
-    -- id_vl already required at module level
 
     wl_main.playstate = wl_def.ex_stillplaying
     wl_main.lasttimecount = id_sd.TimeCount
@@ -345,7 +491,7 @@ function wl_play.PlayLoop()
     wl_agent.anglefrac = 0
     wl_agent.facecount = 0
 
-    local id_vh = require("id_vh")
+    wl_play.InitRedShifts()
 
     while wl_main.playstate == wl_def.ex_stillplaying do
         id_in.IN_ProcessEvents()
@@ -379,6 +525,9 @@ function wl_play.PlayLoop()
         -- Update sound location
         wl_main.UpdateSoundLoc()
 
+        -- Update palette shifts (damage/bonus flash)
+        wl_play.UpdatePaletteShifts()
+
         -- Render
         wl_draw.ThreeDRefresh()
 
@@ -390,22 +539,8 @@ function wl_play.PlayLoop()
             wl_main.playstate = wl_def.ex_abort
         end
     end
-end
 
----------------------------------------------------------------------------
--- Palette effects
----------------------------------------------------------------------------
-
-function wl_play.InitRedShifts()
-end
-
-function wl_play.FinishPaletteShifts()
-end
-
-function wl_play.StartDamageFlash(damage)
-end
-
-function wl_play.StartBonusFlash()
+    wl_play.FinishPaletteShifts()
 end
 
 function wl_play.CenterWindow(w, h)

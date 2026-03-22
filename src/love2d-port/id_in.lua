@@ -48,6 +48,7 @@ id_in.sc_F9         = 0x43
 id_in.sc_F10        = 0x44
 id_in.sc_F11        = 0x57
 id_in.sc_F12        = 0x59
+id_in.sc_Pause      = 0x61
 
 id_in.sc_1 = 0x02;  id_in.sc_2 = 0x03;  id_in.sc_3 = 0x04
 id_in.sc_4 = 0x05;  id_in.sc_5 = 0x06;  id_in.sc_6 = 0x07

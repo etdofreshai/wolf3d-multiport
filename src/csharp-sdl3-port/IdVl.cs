@@ -256,6 +256,17 @@ namespace Wolf3D
             WL_Globals.screenfaded = false;
         }
 
+        // Convenience overloads for VL_FadeOut/VL_FadeIn with no args
+        public static void VL_FadeOut()
+        {
+            VL_FadeOut(0, 255, 0, 0, 0, 30);
+        }
+
+        public static void VL_FadeIn()
+        {
+            VL_FadeIn(0, 255, WL_Globals.sdl_palette, 30);
+        }
+
         public static void VL_TestPaletteSet()
         {
             fastpalette = true;

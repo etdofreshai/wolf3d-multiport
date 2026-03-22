@@ -2,6 +2,7 @@
 // Ported from ID_VH.C / ID_VH.H - Video high-level routines
 
 import * as VL from './id_vl';
+import * as IN from './id_in';
 import { grsegs, pictable } from './id_ca';
 import { STARTPICS, STARTFONT } from './gfxv_wl6';
 import { NUMLATCHPICS, SCREENSIZE } from './wl_def';
@@ -330,11 +331,65 @@ export async function FizzleFade(
     width: number, height: number,
     frames: number, abortable: boolean
 ): Promise<boolean> {
-    // Simple implementation: just copy source to dest instantly
-    // A proper implementation would use a pseudo-random fill pattern
-    VL.VL_UpdateScreen();
-    await new Promise(resolve => setTimeout(resolve, 16));
-    return false;
+    // LFSR-based pseudo-random pixel reveal effect, matching the original C.
+    // Save a snapshot of the current screenbuf as the "source" image.
+    const fizzleSrc = new Uint8Array(320 * 200);
+    fizzleSrc.set(VL.screenbuf);
+
+    let rndval = 1;
+    const pixperframe = ((64000 / frames) | 0) || 1;
+
+    IN.IN_StartAck();
+    const startTime = performance.now();
+    let frame = 0;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+        if (abortable && IN.IN_CheckAck()) {
+            // Copy remaining and finish
+            VL.screenbuf.set(fizzleSrc);
+            VL.VL_UpdateScreen();
+            return true;
+        }
+
+        for (let p = 0; p < pixperframe; p++) {
+            // Separate random value into x/y pair
+            const y = (rndval & 0xFF) - 1;
+            const x = ((rndval >> 8) & 0x1FF);
+
+            // Advance LFSR
+            const carry = rndval & 1;
+            rndval >>= 1;
+            if (carry) {
+                rndval ^= 0x00012000;
+            }
+
+            // Copy pixel if in range
+            if (x <= width && y <= height && x < 320 && y >= 0 && y < 200) {
+                VL.screenbuf[y * 320 + x] = fizzleSrc[y * 320 + x];
+            }
+
+            // Check if LFSR has cycled back to 1 (all pixels visited)
+            if (rndval === 1) {
+                VL.screenbuf.set(fizzleSrc);
+                VL.VL_UpdateScreen();
+                return false;
+            }
+        }
+
+        frame++;
+        VL.VL_UpdateScreen();
+
+        // Wait for frame timing (~70Hz)
+        const elapsed = performance.now() - startTime;
+        const target = frame * (1000 / 70);
+        if (elapsed < target) {
+            await new Promise(resolve => setTimeout(resolve, target - elapsed));
+        } else {
+            // Yield to browser at least once per frame
+            await new Promise(resolve => setTimeout(resolve, 0));
+        }
+    }
 }
 
 //===========================================================================

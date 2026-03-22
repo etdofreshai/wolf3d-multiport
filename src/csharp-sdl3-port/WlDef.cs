@@ -1364,6 +1364,7 @@ namespace Wolf3D
 
         public static bool singlestep, godmode, noclip;
         public static int extravbls;
+        public static int DebugOk;
 
         // Control info
         public static bool mouseenabled, joystickenabled, joypadenabled, joystickprogressive;

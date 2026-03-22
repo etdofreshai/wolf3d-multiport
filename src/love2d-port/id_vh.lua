@@ -324,22 +324,44 @@ function id_vh.FizzleFade(source, dest, width, height, frames, abortable)
     local id_in = require("id_in")
     local id_sd = require("id_sd")
 
-    -- Simple implementation: just copy all pixels immediately
-    -- A proper implementation would use a random pixel fill pattern
-    -- For now, we do a quick dissolve
+    -- Proper LFSR-based pixel reveal (from original Wolf3D)
+    -- The LFSR generates a maximal-length sequence covering all pixels
+    -- Uses a 17-bit LFSR: feedback polynomial x^17 + x^14 + 1
+    -- This covers 2^17 - 1 = 131071 values, enough for 320*200 = 64000 pixels
+
+    -- We have a source buffer (the new frame) already in screenbuf.
+    -- We need to copy from a saved "new" buffer to the display one pixel at a time.
+    -- Since Love2D uses a single buffer, we save the target image and reveal it
+    -- over the current (faded) screen.
+
+    -- Save the target pixels
+    local target = {}
+    for i = 0, width * height - 1 do
+        target[i] = id_vl.screenbuf[i] or 0
+    end
+
+    -- If we have a "source" page saved, restore it as the base
+    -- (In practice, the screenbuf is already set to the new image, so we
+    --  first fill with black or the old content, then reveal target pixels)
+    -- For simplicity: fill visible area with black, then reveal target
+    for i = 0, width * height - 1 do
+        id_vl.screenbuf[i] = 0
+    end
 
     local rndval = 1
     local pixcount = width * height
+    local pixels_per_frame = math.ceil(pixcount / frames)
     local frame = 0
+    local total_revealed = 0
 
-    while frame < frames do
-        local p = 0
-        while p < pixcount do
-            -- Use LFSR for pseudo-random pixel order
-            local x = band(rndval, 0x1FF)  -- 9 bits for x (max 511)
-            local y = rshift(rndval, 9)     -- remaining bits for y
+    while frame < frames and total_revealed < pixcount do
+        local this_frame = 0
+        while this_frame < pixels_per_frame do
+            -- Extract x (low 9 bits) and y (bits 9..16, 8 bits)
+            local x = band(rndval, 0x1FF)
+            local y = band(rshift(rndval, 9), 0xFF)
 
-            -- Advance LFSR
+            -- Advance LFSR (17-bit, taps at 17 and 14: XOR with 0x00012000)
             local carry = band(rndval, 1)
             rndval = rshift(rndval, 1)
             if carry ~= 0 then
@@ -347,26 +369,44 @@ function id_vh.FizzleFade(source, dest, width, height, frames, abortable)
             end
 
             if x < width and y < height then
-                -- Copy pixel from source area to dest area in screenbuf
-                -- In the original, source/dest are VGA page offsets
-                -- For our simplified version, we just ensure the current
-                -- screenbuf content is displayed
-                p = p + 1
+                local idx = y * width + x
+                id_vl.screenbuf[idx] = target[idx]
+                this_frame = this_frame + 1
+                total_revealed = total_revealed + 1
             end
 
-            if rndval == 1 then break end  -- LFSR cycle complete
+            -- LFSR cycle complete
+            if rndval == 1 then
+                -- Fill any remaining pixels
+                for i = 0, pixcount - 1 do
+                    id_vl.screenbuf[i] = target[i]
+                end
+                total_revealed = pixcount
+                break
+            end
         end
 
         id_vl.VL_UpdateScreen()
         frame = frame + 1
 
         id_in.IN_ProcessEvents()
-        if abortable and (id_in.LastScan ~= 0 or id_in.IN_MouseButtons() ~= 0) then
+        if abortable and (id_in.LastScan ~= 0) then
+            -- Finish revealing all pixels
+            for i = 0, pixcount - 1 do
+                id_vl.screenbuf[i] = target[i]
+            end
+            id_vl.VL_UpdateScreen()
             return true
         end
+
+        -- Small delay to make the effect visible
+        love.timer.sleep(1 / 70)
     end
 
     -- Ensure final state is fully drawn
+    for i = 0, pixcount - 1 do
+        id_vl.screenbuf[i] = target[i]
+    end
     id_vl.VL_UpdateScreen()
     return false
 end

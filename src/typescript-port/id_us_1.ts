@@ -93,6 +93,12 @@ export const Scores: HighScore[] = Array.from({ length: MaxScores }, () => ({
 export function setIngame(v: boolean): void { ingame = v; }
 export function setLoadedGame(v: boolean): void { loadedgame = v; }
 export function setRestartGame(v: GameDiff): void { restartgame = v; }
+export function setPrintX(v: number): void { PrintX = v; }
+export function setPrintY(v: number): void { PrintY = v; }
+export function setWindowX(v: number): void { WindowX = v; }
+export function setWindowY(v: number): void { WindowY = v; }
+export function setWindowW(v: number): void { WindowW = v; }
+export function setWindowH(v: number): void { WindowH = v; }
 
 // Random number table
 let rndindex = 0;
@@ -326,8 +332,101 @@ export async function US_LineInput(
     escok: boolean, maxchars: number, maxwidth: number
 ): Promise<boolean> {
     buf.value = def;
-    // Simple stub - real implementation would handle character-by-character input
-    return true;
+
+    const startX = x;
+    let cursorVis = true;
+    let cursorTimer = 0;
+
+    VH.setFontColor(0);
+    VH.setBackColor(VH.WHITE);
+
+    const redraw = (): void => {
+        // Clear the input area
+        VH.VWB_Bar(startX, y, maxwidth > 0 ? maxwidth : 120, 10, VH.WHITE);
+
+        // Draw current text
+        VH.setPx(startX);
+        VH.setPy(y);
+        VH.VWB_DrawPropString(buf.value);
+
+        // Draw cursor
+        if (cursorVis) {
+            const measured = VH.VW_MeasurePropString(buf.value);
+            VH.VWB_Bar(startX + measured.width, y, 6, 10, 0);
+        }
+    };
+
+    IN.IN_ClearKeysDown();
+    IN.setLastASCII(0);
+    IN.setLastScan(IN.sc_None);
+
+    let done = false;
+    let result = true;
+
+    while (!done) {
+        IN.IN_ProcessEvents();
+
+        // Handle ASCII input
+        if (IN.LastASCII) {
+            const ch = IN.LastASCII;
+            IN.setLastASCII(0);
+
+            if (ch === IN.key_BackSpace) {
+                // Backspace
+                if (buf.value.length > 0) {
+                    buf.value = buf.value.substring(0, buf.value.length - 1);
+                }
+            } else if (ch === IN.key_Return || ch === IN.key_Enter) {
+                // Enter - accept
+                done = true;
+                result = true;
+            } else if (ch === IN.key_Escape) {
+                // Escape - cancel
+                if (escok) {
+                    buf.value = def;
+                    done = true;
+                    result = false;
+                }
+            } else if (ch >= 32 && ch < 127) {
+                // Printable character
+                if (buf.value.length < maxchars) {
+                    const newStr = buf.value + String.fromCharCode(ch);
+                    // Check width constraint
+                    if (maxwidth > 0) {
+                        const measured = VH.VW_MeasurePropString(newStr);
+                        if (measured.width <= maxwidth) {
+                            buf.value = newStr;
+                        }
+                    } else {
+                        buf.value = newStr;
+                    }
+                }
+            }
+        }
+
+        // Handle scan codes for escape
+        if (IN.LastScan === IN.sc_Escape && escok) {
+            IN.IN_ClearKey(IN.sc_Escape);
+            buf.value = def;
+            done = true;
+            result = false;
+        }
+
+        // Cursor blink
+        cursorTimer++;
+        if (cursorTimer > 15) {
+            cursorVis = !cursorVis;
+            cursorTimer = 0;
+        }
+
+        redraw();
+        VL.VL_UpdateScreen();
+
+        await new Promise(resolve => setTimeout(resolve, 30));
+    }
+
+    IN.IN_ClearKeysDown();
+    return result;
 }
 
 //===========================================================================

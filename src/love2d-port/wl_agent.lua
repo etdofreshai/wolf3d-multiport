@@ -8,6 +8,8 @@ local band, bor, bxor, lshift, rshift = bit.band, bit.bor, bit.bxor, bit.lshift,
 local wl_def = require("wl_def")
 local id_us  = require("id_us")
 local id_sd  = require("id_sd")
+local gfx    = require("gfxv_wl6")
+local audiowl6 = require("audiowl6")
 
 local wl_agent = {}
 
@@ -112,6 +114,14 @@ end
 
 function wl_agent.ClipMove(ob, xmove, ymove)
     local wl_main = require("wl_main")
+    local wl_play = require("wl_play")
+
+    -- If noclip, skip collision
+    if wl_play.noclip then
+        ob.x = ob.x + xmove
+        ob.y = ob.y + ymove
+        return
+    end
 
     -- Try X move
     local newx = ob.x + xmove
@@ -262,7 +272,7 @@ function wl_agent.T_Attack(ob)
         gs.weaponframe = frame[3]
 
         -- Fire shot
-        if frame[2] > 0 then
+        if frame[2] > 0 and frame[2] ~= 2 then
             wl_agent.GunAttack(ob)
         elseif frame[2] == 2 then
             wl_agent.KnifeAttack(ob)
@@ -291,6 +301,17 @@ function wl_agent.Cmd_Fire()
     gs.weaponframe = wl_agent.attackinfo[gs.weapon][1][3]
 
     wl_state.NewState(wl_play.player, wl_agent.s_attack)
+
+    -- Play attack sound
+    if gs.weapon == wl_def.wp_knife then
+        id_sd.SD_PlaySound(audiowl6.ATKKNIFESND)
+    elseif gs.weapon == wl_def.wp_pistol then
+        id_sd.SD_PlaySound(audiowl6.ATKPISTOLSND)
+    elseif gs.weapon == wl_def.wp_machinegun then
+        id_sd.SD_PlaySound(audiowl6.ATKMACHINEGUNSND)
+    elseif gs.weapon == wl_def.wp_chaingun then
+        id_sd.SD_PlaySound(audiowl6.ATKGATLINGSND)
+    end
 end
 
 function wl_agent.Cmd_Use()
@@ -346,16 +367,82 @@ end
 
 function wl_agent.GunAttack(ob)
     local wl_main = require("wl_main")
+    local wl_play = require("wl_play")
 
     if wl_main.gamestate.ammo > 0 then
         wl_main.gamestate.ammo = wl_main.gamestate.ammo - 1
+        wl_agent.DrawAmmo()
     end
 
-    -- Simplified: damage nearest visible enemy in crosshair
+    wl_play.madenoise = true
+
+    -- Check for hit on enemies in line of fire
+    local player = wl_play.player
+    if not player then return end
+
+    -- Trace from player toward facing angle and check actors
+    local ob_iter = player.next
+    local closest_dist = 999999
+    local closest_ob = nil
+
+    while ob_iter do
+        if ob_iter.flags and band(ob_iter.flags, wl_def.FL_SHOOTABLE) ~= 0 then
+            -- Simple distance check along facing direction
+            local dx = ob_iter.tilex - player.tilex
+            local dy = ob_iter.tiley - player.tiley
+            local dist = math.sqrt(dx * dx + dy * dy)
+
+            -- Check if roughly in front of player
+            local angle_to = math.atan2(-dy, dx) * 180 / math.pi
+            if angle_to < 0 then angle_to = angle_to + 360 end
+            local angle_diff = math.abs(angle_to - player.angle)
+            if angle_diff > 180 then angle_diff = 360 - angle_diff end
+
+            if angle_diff < 15 and dist < closest_dist and dist < 10 then
+                closest_dist = dist
+                closest_ob = ob_iter
+            end
+        end
+        ob_iter = ob_iter.next
+    end
+
+    if closest_ob then
+        local damage = rshift(id_us.US_RndT(), 4)
+        -- Damage scales with distance
+        if closest_dist > 2 then
+            damage = math.floor(damage / (closest_dist * 0.5))
+        end
+        if damage < 1 then damage = 1 end
+
+        id_sd.SD_PlaySound(audiowl6.HITENEMYSND)
+
+        local wl_state = require("wl_state")
+        wl_state.DamageActor(closest_ob, damage)
+    end
 end
 
 function wl_agent.KnifeAttack(ob)
-    -- Simplified: damage nearest enemy within melee range
+    local wl_play = require("wl_play")
+
+    local player = wl_play.player
+    if not player then return end
+
+    -- Check for enemy within melee range (1 tile)
+    local ob_iter = player.next
+    while ob_iter do
+        if ob_iter.flags and band(ob_iter.flags, wl_def.FL_SHOOTABLE) ~= 0 then
+            local dx = math.abs(ob_iter.tilex - player.tilex)
+            local dy = math.abs(ob_iter.tiley - player.tiley)
+            if dx <= 1 and dy <= 1 then
+                local damage = rshift(id_us.US_RndT(), 4)
+                id_sd.SD_PlaySound(audiowl6.HITENEMYSND)
+                local wl_state = require("wl_state")
+                wl_state.DamageActor(ob_iter, damage)
+                return
+            end
+        end
+        ob_iter = ob_iter.next
+    end
 end
 
 ---------------------------------------------------------------------------
@@ -373,6 +460,7 @@ function wl_agent.CheckWeaponChange()
         if wl_play.buttonstate[bt] then
             wl_main.gamestate.weapon = i
             wl_main.gamestate.chosenweapon = i
+            wl_agent.DrawWeapon()
             return
         end
     end
@@ -391,58 +479,76 @@ function wl_agent.GetBonus(statptr)
 
     if item == wl_def.bo_firstaid then
         if gs.health >= 100 then return end
+        id_sd.SD_PlaySound(audiowl6.HEALTH2SND)
         wl_agent.HealSelf(25)
     elseif item == wl_def.bo_key1 then
         wl_agent.GiveKey(0)
+        id_sd.SD_PlaySound(audiowl6.GETKEYSND)
     elseif item == wl_def.bo_key2 then
         wl_agent.GiveKey(1)
+        id_sd.SD_PlaySound(audiowl6.GETKEYSND)
     elseif item == wl_def.bo_key3 then
         wl_agent.GiveKey(2)
+        id_sd.SD_PlaySound(audiowl6.GETKEYSND)
     elseif item == wl_def.bo_key4 then
         wl_agent.GiveKey(3)
+        id_sd.SD_PlaySound(audiowl6.GETKEYSND)
     elseif item == wl_def.bo_cross then
+        id_sd.SD_PlaySound(audiowl6.BONUS1SND)
         wl_agent.GivePoints(100)
         gs.treasurecount = gs.treasurecount + 1
     elseif item == wl_def.bo_chalice then
+        id_sd.SD_PlaySound(audiowl6.BONUS2SND)
         wl_agent.GivePoints(500)
         gs.treasurecount = gs.treasurecount + 1
     elseif item == wl_def.bo_bible then
+        id_sd.SD_PlaySound(audiowl6.BONUS3SND)
         wl_agent.GivePoints(1000)
         gs.treasurecount = gs.treasurecount + 1
     elseif item == wl_def.bo_crown then
+        id_sd.SD_PlaySound(audiowl6.BONUS4SND)
         wl_agent.GivePoints(5000)
         gs.treasurecount = gs.treasurecount + 1
     elseif item == wl_def.bo_clip then
         if gs.ammo >= 99 then return end
+        id_sd.SD_PlaySound(audiowl6.GETAMMOSND)
         wl_agent.GiveAmmo(8)
     elseif item == wl_def.bo_clip2 then
         if gs.ammo >= 99 then return end
+        id_sd.SD_PlaySound(audiowl6.GETAMMOSND)
         wl_agent.GiveAmmo(4)
     elseif item == wl_def.bo_25clip then
         if gs.ammo >= 99 then return end
+        id_sd.SD_PlaySound(audiowl6.GETAMMOSND)
         wl_agent.GiveAmmo(25)
     elseif item == wl_def.bo_machinegun then
+        id_sd.SD_PlaySound(audiowl6.GETMACHINESND)
         wl_agent.GiveWeapon(wl_def.wp_machinegun)
-        wl_agent.GiveAmmo(6)
     elseif item == wl_def.bo_chaingun then
+        id_sd.SD_PlaySound(audiowl6.GETGATLINGSND)
         wl_agent.GiveWeapon(wl_def.wp_chaingun)
-        wl_agent.GiveAmmo(6)
     elseif item == wl_def.bo_food then
         if gs.health >= 100 then return end
+        id_sd.SD_PlaySound(audiowl6.HEALTH1SND)
         wl_agent.HealSelf(10)
     elseif item == wl_def.bo_alpo then
         if gs.health >= 100 then return end
+        id_sd.SD_PlaySound(audiowl6.HEALTH1SND)
         wl_agent.HealSelf(4)
     elseif item == wl_def.bo_fullheal then
+        id_sd.SD_PlaySound(audiowl6.BONUS1UPSND)
         wl_agent.HealSelf(99)
         wl_agent.GiveAmmo(25)
         gs.treasurecount = gs.treasurecount + 1
         if gs.lives < 9 then gs.lives = gs.lives + 1 end
+        wl_agent.DrawLives()
     elseif item == wl_def.bo_gibs then
         return  -- no pickup
     else
         return
     end
+
+    wl_play.StartBonusFlash()
 
     -- Remove the item
     statptr.shapenum = -1
@@ -459,30 +565,44 @@ function wl_agent.GivePoints(points)
         wl_main.gamestate.nextextra = wl_main.gamestate.nextextra + wl_def.EXTRAPOINTS
         if wl_main.gamestate.lives < 9 then
             wl_main.gamestate.lives = wl_main.gamestate.lives + 1
+            id_sd.SD_PlaySound(audiowl6.BONUS1UPSND)
+            wl_agent.DrawLives()
         end
     end
+    wl_agent.DrawScore()
 end
 
 function wl_agent.GiveWeapon(weapon)
     local wl_main = require("wl_main")
-    wl_main.gamestate.weapon = weapon
+    wl_agent.GiveAmmo(6)
     if weapon > wl_main.gamestate.bestweapon then
         wl_main.gamestate.bestweapon = weapon
     end
+    wl_main.gamestate.weapon = weapon
     wl_main.gamestate.chosenweapon = weapon
+    wl_agent.DrawWeapon()
 end
 
 function wl_agent.GiveAmmo(ammo)
     local wl_main = require("wl_main")
+    if wl_main.gamestate.ammo == 0 then
+        -- Knife was out, switch to chosen weapon
+        if wl_main.gamestate.attackframe == 0 then
+            wl_main.gamestate.weapon = wl_main.gamestate.chosenweapon
+            wl_agent.DrawWeapon()
+        end
+    end
     wl_main.gamestate.ammo = wl_main.gamestate.ammo + ammo
     if wl_main.gamestate.ammo > 99 then
         wl_main.gamestate.ammo = 99
     end
+    wl_agent.DrawAmmo()
 end
 
 function wl_agent.GiveKey(key)
     local wl_main = require("wl_main")
     wl_main.gamestate.keys = bor(wl_main.gamestate.keys, lshift(1, key))
+    wl_agent.DrawKeys()
 end
 
 function wl_agent.TakeDamage(points, attacker)
@@ -506,7 +626,10 @@ function wl_agent.TakeDamage(points, attacker)
         wl_play.killerobj = attacker
     end
 
+    wl_play.StartDamageFlash(points)
     wl_agent.gotgatgun = 0
+    wl_agent.DrawHealth()
+    wl_agent.DrawFace()
 end
 
 function wl_agent.HealSelf(points)
@@ -515,37 +638,163 @@ function wl_agent.HealSelf(points)
     if wl_main.gamestate.health > 100 then
         wl_main.gamestate.health = 100
     end
+    wl_agent.DrawHealth()
     wl_agent.gotgatgun = 0
+    wl_agent.DrawFace()
 end
 
 ---------------------------------------------------------------------------
--- HUD Drawing functions
+-- HUD Drawing functions - StatusDrawPic, LatchNumber, then high-level
+-- x,y are in latch tile units (each unit = 8 pixels)
+-- Status bar occupies bottom 40 lines (y=160..199)
+---------------------------------------------------------------------------
+
+function wl_agent.StatusDrawPic(x, y, picnum)
+    local id_vh = require("id_vh")
+    -- x in tile units (8 pixels), y in pixels from top of status bar
+    -- Status bar starts at screen y = 160
+    local sx = x * 8
+    local sy = 160 + y
+    id_vh.VWB_DrawPic(sx, sy, picnum)
+end
+
+function wl_agent.LatchNumber(x, y, width, number)
+    local str = tostring(math.floor(math.abs(number)))
+    local length = #str
+
+    -- Pad with blanks on the left
+    while length < width do
+        wl_agent.StatusDrawPic(x, y, gfx.N_BLANKPIC)
+        x = x + 1
+        width = width - 1
+    end
+
+    -- Start position if number is wider than width
+    local c = 1
+    if length > width then
+        c = length - width + 1
+    end
+
+    while c <= length do
+        local digit = string.byte(str, c) - string.byte("0")
+        wl_agent.StatusDrawPic(x, y, gfx.N_0PIC + digit)
+        x = x + 1
+        c = c + 1
+    end
+end
+
+---------------------------------------------------------------------------
+-- DrawFace - draw BJ's face in the status bar
+-- Face pics: FACE1APIC through FACE8APIC
+-- 3 frames per row (A, B, C), 8 health ranges (7 alive + 1 dead)
+-- Row = (100 - health) / 16, clamped 0..6 for alive
 ---------------------------------------------------------------------------
 
 function wl_agent.DrawFace()
-    -- Simplified: would draw BJ's face in status bar
+    local wl_main = require("wl_main")
+    local wl_play = require("wl_play")
+    local gs = wl_main.gamestate
+
+    if gs.health > 0 then
+        if wl_agent.gotgatgun ~= 0 and wl_play.godmode then
+            -- Got gatling gun face
+            wl_agent.StatusDrawPic(17, 4, gfx.GOTGATLINGPIC)
+        else
+            local healthrow = math.floor((100 - gs.health) / 16)
+            if healthrow < 0 then healthrow = 0 end
+            if healthrow > 6 then healthrow = 6 end
+            local faceframe = gs.faceframe or 0
+            if faceframe > 2 then faceframe = 0 end
+            wl_agent.StatusDrawPic(17, 4, gfx.FACE1APIC + 3 * healthrow + faceframe)
+        end
+    else
+        -- Dead face
+        if wl_agent.LastAttacker and wl_agent.LastAttacker.obclass == wl_def.needleobj then
+            wl_agent.StatusDrawPic(17, 4, gfx.MUTANTBJPIC)
+        else
+            wl_agent.StatusDrawPic(17, 4, gfx.FACE8APIC)
+        end
+    end
 end
 
 function wl_agent.UpdateFace()
     local wl_main = require("wl_main")
+
+    -- Don't change face while gatling gun sound plays
+    if id_sd.SD_SoundPlaying() == audiowl6.GETGATLINGSND then
+        return
+    end
+
     wl_agent.facecount = wl_agent.facecount + wl_main.tics
     if wl_agent.facecount > (id_us.US_RndT() or 128) then
         local gs = wl_main.gamestate
         gs.faceframe = rshift(id_us.US_RndT(), 6)
         if gs.faceframe == 3 then gs.faceframe = 1 end
+
         wl_agent.facecount = 0
         wl_agent.DrawFace()
     end
 end
 
-function wl_agent.DrawHealth() end
-function wl_agent.DrawLives() end
-function wl_agent.DrawLevel() end
-function wl_agent.DrawAmmo() end
-function wl_agent.DrawKeys() end
-function wl_agent.DrawWeapon() end
-function wl_agent.DrawScore() end
-function wl_agent.StatusDrawPic(x, y, picnum) end
-function wl_agent.LatchNumber(x, y, width, number) end
+function wl_agent.DrawHealth()
+    local wl_main = require("wl_main")
+    wl_agent.LatchNumber(21, 16, 3, wl_main.gamestate.health)
+end
+
+function wl_agent.DrawLives()
+    local wl_main = require("wl_main")
+    wl_agent.LatchNumber(14, 16, 1, wl_main.gamestate.lives)
+end
+
+function wl_agent.DrawLevel()
+    local wl_main = require("wl_main")
+    wl_agent.LatchNumber(2, 16, 2, wl_main.gamestate.mapon + 1)
+end
+
+function wl_agent.DrawAmmo()
+    local wl_main = require("wl_main")
+    wl_agent.LatchNumber(27, 16, 2, wl_main.gamestate.ammo)
+end
+
+function wl_agent.DrawScore()
+    local wl_main = require("wl_main")
+    wl_agent.LatchNumber(6, 16, 6, wl_main.gamestate.score)
+end
+
+function wl_agent.DrawWeapon()
+    local wl_main = require("wl_main")
+    wl_agent.StatusDrawPic(32, 8, gfx.KNIFEPIC + wl_main.gamestate.weapon)
+end
+
+function wl_agent.DrawKeys()
+    local wl_main = require("wl_main")
+
+    if band(wl_main.gamestate.keys, 1) ~= 0 then
+        wl_agent.StatusDrawPic(30, 4, gfx.GOLDKEYPIC)
+    else
+        wl_agent.StatusDrawPic(30, 4, gfx.NOKEYPIC)
+    end
+
+    if band(wl_main.gamestate.keys, 2) ~= 0 then
+        wl_agent.StatusDrawPic(30, 20, gfx.SILVERKEYPIC)
+    else
+        wl_agent.StatusDrawPic(30, 20, gfx.NOKEYPIC)
+    end
+end
+
+---------------------------------------------------------------------------
+-- DrawAllHUD - convenience to draw all HUD elements at once
+---------------------------------------------------------------------------
+
+function wl_agent.DrawAllHUD()
+    wl_agent.DrawFace()
+    wl_agent.DrawHealth()
+    wl_agent.DrawLives()
+    wl_agent.DrawLevel()
+    wl_agent.DrawAmmo()
+    wl_agent.DrawScore()
+    wl_agent.DrawWeapon()
+    wl_agent.DrawKeys()
+end
 
 return wl_agent

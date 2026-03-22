@@ -1,5 +1,5 @@
 // ID_US_1.C -> IdUs.cs
-// User Manager - printing, windows, scores, random numbers
+// User Manager - printing, windows, scores, random numbers, line input
 
 using System;
 
@@ -39,8 +39,12 @@ namespace Wolf3D
         public static MeasureStringFunc USL_MeasureString;
         public static DrawStringFunc USL_DrawString;
 
+        private static bool US_Started;
+
         public static void US_Startup()
         {
+            if (US_Started) return;
+
             // Set up default print routines
             USL_MeasureString = (string s, out int w, out int h) =>
             {
@@ -51,25 +55,50 @@ namespace Wolf3D
                 IdVh.VW_DrawPropString(s);
             };
 
+            US_InitRndT(true);
+
             // Initialize scores
+            string[] defaultNames = {
+                "id software-'92", "Adrian Carmack", "John Carmack",
+                "Kevin Cloud", "Tom Hall", "John Romero", "Jay Wilbur"
+            };
             for (int i = 0; i < WolfConstants.MaxScores; i++)
             {
                 WL_Globals.Scores[i] = new HighScore
                 {
-                    name = "id software",
+                    name = (i < defaultNames.Length) ? defaultNames[i] : "id software",
                     score = 10000 * (WolfConstants.MaxScores - i),
-                    completed = 0,
+                    completed = 1,
                     episode = 0
                 };
             }
 
             for (int i = 0; i < WolfConstants.MaxSaveGames; i++)
                 WL_Globals.Games[i] = new SaveGame();
+
+            US_Started = true;
         }
 
         public static void US_Shutdown()
         {
+            if (!US_Started) return;
+            US_Started = false;
         }
+
+        // =========================================================================
+        //  USL_HardError - fatal error handler
+        // =========================================================================
+
+        public static void USL_HardError(string errstr)
+        {
+            WlMain.ShutdownId();
+            Console.Error.WriteLine("Terminal Error: " + errstr);
+            Environment.Exit(1);
+        }
+
+        // =========================================================================
+        //  Random number generator
+        // =========================================================================
 
         public static void US_InitRndT(bool randomize)
         {
@@ -104,27 +133,32 @@ namespace Wolf3D
         {
             if (s == null) return;
 
-            foreach (char c in s)
+            // Split on newlines and print each segment
+            int start = 0;
+            for (int i = 0; i <= s.Length; i++)
             {
-                if (c == '\n')
+                if (i == s.Length || s[i] == '\n')
                 {
-                    WL_Globals.px = WL_Globals.WindowX;
-                    WL_Globals.PrintX = (ushort)WL_Globals.px;
-                    WL_Globals.py += 10;
-                    WL_Globals.PrintY = (ushort)WL_Globals.py;
-                    continue;
-                }
-            }
+                    string segment = s.Substring(start, i - start);
+                    if (segment.Length > 0)
+                    {
+                        int w = 0, h = 0;
+                        USL_MeasureString?.Invoke(segment, out w, out h);
+                        WL_Globals.px = WL_Globals.PrintX;
+                        WL_Globals.py = WL_Globals.PrintY;
+                        USL_DrawString?.Invoke(segment);
+                        WL_Globals.PrintX += (ushort)w;
+                    }
 
-            // Draw the full string using current font
-            string clean = s.Replace("\n", "");
-            if (clean.Length > 0)
-            {
-                WL_Globals.px = WL_Globals.PrintX;
-                WL_Globals.py = WL_Globals.PrintY;
-                USL_DrawString?.Invoke(clean);
-                WL_Globals.PrintX = (ushort)WL_Globals.px;
-                WL_Globals.PrintY = (ushort)WL_Globals.py;
+                    if (i < s.Length && s[i] == '\n')
+                    {
+                        WL_Globals.PrintX = WL_Globals.WindowX;
+                        int h2 = 0, w2 = 0;
+                        USL_MeasureString?.Invoke("X", out w2, out h2);
+                        WL_Globals.PrintY += (ushort)h2;
+                    }
+                    start = i + 1;
+                }
             }
         }
 
@@ -142,24 +176,47 @@ namespace Wolf3D
         {
             if (s == null) return;
 
-            int w = 0, h = 0;
-            if (USL_MeasureString != null)
-                USL_MeasureString(s, out w, out h);
+            // Split on newlines and center each line
+            string[] lines = s.Split('\n');
+            foreach (string line in lines)
+            {
+                if (line.Length == 0)
+                {
+                    int h2 = 0, w2 = 0;
+                    USL_MeasureString?.Invoke("X", out w2, out h2);
+                    WL_Globals.PrintY += (ushort)h2;
+                    continue;
+                }
 
-            WL_Globals.px = (ushort)(WL_Globals.WindowX + (WL_Globals.WindowW - w) / 2);
-            WL_Globals.PrintX = (ushort)WL_Globals.px;
-            USL_DrawString?.Invoke(s);
+                int w = 0, h = 0;
+                USL_MeasureString?.Invoke(line, out w, out h);
+                WL_Globals.px = (ushort)(WL_Globals.WindowX + (WL_Globals.WindowW - w) / 2);
+                WL_Globals.py = WL_Globals.PrintY;
+                WL_Globals.PrintX = (ushort)WL_Globals.px;
+                USL_DrawString?.Invoke(line);
+                WL_Globals.PrintY += (ushort)h;
+            }
         }
 
         public static void US_CPrintLine(string s)
         {
-            US_CPrint(s);
-            WL_Globals.PrintY += 10;
+            if (s == null) return;
+            int w = 0, h = 0;
+            USL_MeasureString?.Invoke(s, out w, out h);
+            WL_Globals.px = (ushort)(WL_Globals.WindowX + (WL_Globals.WindowW - w) / 2);
+            WL_Globals.py = WL_Globals.PrintY;
+            USL_DrawString?.Invoke(s);
+            WL_Globals.PrintY += (ushort)h;
         }
 
         public static void US_PrintCentered(string s)
         {
-            US_CPrint(s);
+            if (s == null) return;
+            int w = 0, h = 0;
+            USL_MeasureString?.Invoke(s, out w, out h);
+            WL_Globals.px = (ushort)(WL_Globals.WindowX + (WL_Globals.WindowW - w) / 2);
+            WL_Globals.py = (ushort)(WL_Globals.WindowY + (WL_Globals.WindowH - h) / 2);
+            USL_DrawString?.Invoke(s);
         }
 
         // =========================================================================
@@ -234,32 +291,188 @@ namespace Wolf3D
         }
 
         // =========================================================================
-        //  Line input
+        //  US_LineInput - full line input with cursor, editing, esc/return
         // =========================================================================
 
         public static bool US_LineInput(int x, int y, char[] buf, string def, bool escok, int maxchars, int maxwidth)
         {
-            // Simplified line input
-            if (def != null)
+            string s = def ?? "";
+            int cursor = s.Length;
+            bool done = false;
+            bool result = false;
+            bool cursorvis = false;
+            int lasttime = WL_Globals.TimeCount;
+
+            WL_Globals.LastASCII = '\0';
+            WL_Globals.LastScan = ScanCodes.sc_None;
+
+            while (!done)
             {
-                for (int i = 0; i < def.Length && i < buf.Length; i++)
-                    buf[i] = def[i];
+                IdIn.IN_ProcessEvents();
+                IdSd.SD_TimeCountUpdate();
+
+                byte sc = WL_Globals.LastScan;
+                char c = WL_Globals.LastASCII;
+                WL_Globals.LastScan = ScanCodes.sc_None;
+                WL_Globals.LastASCII = '\0';
+
+                switch (sc)
+                {
+                    case ScanCodes.sc_LeftArrow:
+                        if (cursor > 0) cursor--;
+                        c = '\0';
+                        break;
+                    case ScanCodes.sc_RightArrow:
+                        if (cursor < s.Length) cursor++;
+                        c = '\0';
+                        break;
+                    case ScanCodes.sc_Home:
+                        cursor = 0;
+                        c = '\0';
+                        break;
+                    case ScanCodes.sc_End:
+                        cursor = s.Length;
+                        c = '\0';
+                        break;
+                    case ScanCodes.sc_Return:
+                        done = true;
+                        result = true;
+                        c = '\0';
+                        break;
+                    case ScanCodes.sc_Escape:
+                        if (escok)
+                        {
+                            done = true;
+                            result = false;
+                        }
+                        c = '\0';
+                        break;
+                    case ScanCodes.sc_BackSpace:
+                        if (cursor > 0 && s.Length > 0)
+                        {
+                            s = s.Remove(cursor - 1, 1);
+                            cursor--;
+                        }
+                        c = '\0';
+                        break;
+                }
+
+                // Printable character input
+                if (c >= 32 && c < 127 && s.Length < maxchars)
+                {
+                    // Check width if maxwidth > 0
+                    string test = s.Insert(cursor, c.ToString());
+                    if (maxwidth > 0)
+                    {
+                        int tw = 0, th = 0;
+                        USL_MeasureString?.Invoke(test, out tw, out th);
+                        if (tw <= maxwidth)
+                        {
+                            s = test;
+                            cursor++;
+                        }
+                    }
+                    else
+                    {
+                        s = test;
+                        cursor++;
+                    }
+                }
+
+                // Draw the input field
+                // Clear area
+                IdVl.VL_Bar(x, y, maxwidth > 0 ? maxwidth + 10 : 200, 12, WolfConstants.WHITE);
+
+                // Draw text
+                WL_Globals.px = (ushort)x;
+                WL_Globals.py = (ushort)y;
+                USL_DrawString?.Invoke(s);
+
+                // Blink cursor
+                if (WL_Globals.TimeCount - lasttime > 35)
+                {
+                    cursorvis = !cursorvis;
+                    lasttime = WL_Globals.TimeCount;
+                }
+                if (cursorvis)
+                {
+                    int cw = 0, ch = 0;
+                    string pre = s.Substring(0, cursor);
+                    USL_MeasureString?.Invoke(pre, out cw, out ch);
+                    IdVl.VL_Bar(x + cw, y, 2, 10, 0);
+                }
+
+                IdVl.VL_UpdateScreen();
+                SDL.SDL_Delay(10);
             }
-            return true;
+
+            if (result)
+            {
+                for (int i = 0; i < buf.Length; i++)
+                    buf[i] = (i < s.Length) ? s[i] : '\0';
+            }
+
+            return result;
         }
 
         // =========================================================================
-        //  Score display
+        //  High score display and entry
         // =========================================================================
 
         public static void US_DisplayHighScores(int which)
         {
-            // Draw high scores
+            // Draw high scores background
+            IdCa.CA_CacheGrChunk((int)graphicnums.HIGHSCORESPIC);
+            IdVh.VWB_DrawPic(0, 0, (int)graphicnums.HIGHSCORESPIC);
+
+            WL_Globals.fontnumber = 0;
+            WL_Globals.fontcolor = (byte)15;
+
+            int y = 68;
+            for (int i = 0; i < WolfConstants.MaxScores; i++)
+            {
+                // Highlight the player's entry
+                if (i == which)
+                    WL_Globals.fontcolor = (byte)0x0f;
+                else
+                    WL_Globals.fontcolor = (byte)15;
+
+                // Name
+                WL_Globals.px = 32;
+                WL_Globals.py = (ushort)y;
+                USL_DrawString?.Invoke(WL_Globals.Scores[i].name);
+
+                // Score
+                string scoreStr = WL_Globals.Scores[i].score.ToString();
+                int sw = 0, sh = 0;
+                USL_MeasureString?.Invoke(scoreStr, out sw, out sh);
+                WL_Globals.px = (ushort)(224 - sw);
+                WL_Globals.py = (ushort)y;
+                USL_DrawString?.Invoke(scoreStr);
+
+                // Level completed
+                WL_Globals.px = 240;
+                WL_Globals.py = (ushort)y;
+                if (WL_Globals.Scores[i].completed > 0)
+                    USL_DrawString?.Invoke("E" + (WL_Globals.Scores[i].episode + 1).ToString() +
+                        "/L" + WL_Globals.Scores[i].completed.ToString());
+
+                y += 16;
+            }
+
+            // Set PrintX/PrintY for potential name entry
+            if (which >= 0 && which < WolfConstants.MaxScores)
+            {
+                WL_Globals.PrintX = 32;
+                WL_Globals.PrintY = (ushort)(68 + which * 16);
+                WL_Globals.px = WL_Globals.PrintX;
+                WL_Globals.py = WL_Globals.PrintY;
+            }
         }
 
         public static void US_CheckHighScore(int score, ushort other)
         {
-            // Check and record high score
+            WlInter.CheckHighScore(score, other);
         }
 
         public static string USL_GiveSaveName(int game)
