@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ID_VL.C - Video Low-Level | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>ID_VL.C</span>
+</div>
+
+<h2>ID_VL.C &mdash; Video Low-Level <span class="tag tag-engine">Engine</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> Low-level VGA hardware interface. Handles video mode setup, palette management, pixel/line/bar drawing primitives, memory-to-screen blitting, latch operations, and screen fading. This is the lowest layer of the video system &mdash; everything between the game and the VGA hardware registers.</p>
+<p><strong>Author:</strong> John Carmack / id Software</p>
+<p><strong>Original target:</strong> DOS real-mode, VGA Mode-X (planar 320x200, 256 colors)</p>
+</div>
+
+<h3>Key Globals</h3>
+<table class="globals-table">
+<tr><th>Variable</th><th>Type</th><th>Description</th></tr>
+<tr><td>bufferofs</td><td>unsigned</td><td>Offset into VGA memory for the back buffer</td></tr>
+<tr><td>displayofs</td><td>unsigned</td><td>Offset for the currently displayed page</td></tr>
+<tr><td>pelpan</td><td>unsigned</td><td>Pixel panning value (smooth scroll)</td></tr>
+<tr><td>screenseg</td><td>unsigned</td><td>VGA segment address (0xA000)</td></tr>
+<tr><td>linewidth</td><td>unsigned</td><td>Bytes per scanline (80 for Mode-X)</td></tr>
+<tr><td>ylookup[]</td><td>unsigned[MAXSCANLINES]</td><td>Precomputed row offsets into video memory</td></tr>
+<tr><td>screenfaded</td><td>boolean</td><td>True when screen is faded to a solid color</td></tr>
+<tr><td>palette1, palette2</td><td>byte[256][3]</td><td>Working palette buffers for fade effects</td></tr>
+<tr><td>fastpalette</td><td>boolean</td><td>True if OUTSB palette setting works on this card</td></tr>
+</table>
+
+<h3>Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">VL_Startup</span><span class="func-params">(void)</span> &mdash; Initialize video system, detect VGA card</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_Shutdown</span><span class="func-params">(void)</span> &mdash; Restore text mode</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_SetVGAPlaneMode</span><span class="func-params">(void)</span> &mdash; Set Mode 13h then de-plane to Mode-X</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_SetTextMode</span><span class="func-params">(void)</span> &mdash; Switch back to 80x25 text mode</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_ClearVideo</span><span class="func-params">(byte color)</span> &mdash; Fill entire VGA buffer with a color</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_DePlaneVGA</span><span class="func-params">(void)</span> &mdash; Reconfigure VGA from chain-4 to unchained planar mode</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_SetLineWidth</span><span class="func-params">(unsigned width)</span> &mdash; Set virtual screen width and rebuild ylookup table</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_SetSplitScreen</span><span class="func-params">(int linenum)</span> &mdash; Set hardware split-screen line</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_FillPalette</span><span class="func-params">(int red, int green, int blue)</span> &mdash; Set all 256 palette entries to one color</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_SetColor</span><span class="func-params">(int color, int red, int green, int blue)</span> &mdash; Set a single palette entry</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_GetColor</span><span class="func-params">(int color, int *red, int *green, int *blue)</span> &mdash; Read a single palette entry</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_SetPalette</span><span class="func-params">(byte far *palette)</span> &mdash; Set all 256 palette entries from array</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_GetPalette</span><span class="func-params">(byte far *palette)</span> &mdash; Read all 256 palette entries</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_FadeOut</span><span class="func-params">(int start, int end, int red, int green, int blue, int steps)</span> &mdash; Fade palette to a solid color over N frames</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_FadeIn</span><span class="func-params">(int start, int end, byte far *palette, int steps)</span> &mdash; Fade from current palette to target over N frames</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_TestPaletteSet</span><span class="func-params">(void)</span> &mdash; Test if fast OUTSB palette setting works</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_ColorBorder</span><span class="func-params">(int color)</span> &mdash; Set overscan border color via BIOS</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_Plot</span><span class="func-params">(int x, int y, int color)</span> &mdash; Draw a single pixel</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_Hlin</span><span class="func-params">(unsigned x, unsigned y, unsigned width, unsigned color)</span> &mdash; Horizontal line</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_Vlin</span><span class="func-params">(int x, int y, int height, int color)</span> &mdash; Vertical line</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_Bar</span><span class="func-params">(int x, int y, int width, int height, int color)</span> &mdash; Filled rectangle</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_MemToLatch</span><span class="func-params">(byte far *source, int width, int height, unsigned dest)</span> &mdash; Copy main memory to VGA latch memory</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_MemToScreen</span><span class="func-params">(byte far *source, int width, int height, int x, int y)</span> &mdash; Draw a block of planar data to the screen</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_MaskedToScreen</span><span class="func-params">(byte far *source, int width, int height, int x, int y)</span> &mdash; Draw masked (transparent) block to screen</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_LatchToScreen</span><span class="func-params">(unsigned source, int width, int height, int x, int y)</span> &mdash; Copy from latch (VGA-to-VGA) to screen</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_DrawTile8String</span><span class="func-params">(char *str, char far *tile8ptr, int printx, int printy)</span> &mdash; Draw text using 8x8 tile font from main memory</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_DrawLatch8String</span><span class="func-params">(char *str, unsigned tile8ptr, int printx, int printy)</span> &mdash; Draw text using 8x8 tile font from latch memory</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_SizeTile8String</span><span class="func-params">(char *str, int *width, int *height)</span> &mdash; Measure string dimensions</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>ID_HEAD.H</code>, <code>ID_VL.H</code> &mdash; Type definitions and VGA register constants</li>
+<li><code>ID_VL_A.ASM</code> &mdash; Assembly routines: VL_VideoID, VL_SetCRTC, VL_SetScreen, VL_WaitVBL</li>
+</ul>
+
+<h3>Side-by-Side: VL_Startup</h3>
+<div class="code-comparison">
+<div class="code-panel">
+<div class="code-label original">C Original (DOS)</div>
+<pre><code>void VL_Startup (void)
+{
+    int i,videocard;
+
+    asm cld;
+
+    videocard = VL_VideoID ();
+    for (i = 1;i &lt; _argc;i++)
+        if (US_CheckParm(_argv[i],ParmStrings) == 0)
+        {
+            videocard = 5;
+            break;
+        }
+
+    if (videocard != 5)
+        Quit ("Improper video card!  ...");
+}</code></pre>
+</div>
+<div class="code-panel">
+<div class="code-label sdl3">C SDL3 Port</div>
+<pre><code>void VL_Startup (void)
+{
+    if (sdl_window)
+        return;
+
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
+        Quit("SDL_Init(VIDEO|AUDIO) failed!");
+
+    sdl_window = SDL_CreateWindow(
+        "Wolfenstein 3-D", 320*3, 200*3, 0);
+    if (!sdl_window)
+        Quit("SDL_CreateWindow failed!");
+
+    sdl_renderer = SDL_CreateRenderer(
+        sdl_window, NULL);
+    sdl_texture = SDL_CreateTexture(sdl_renderer,
+        SDL_PIXELFORMAT_XRGB8888,
+        SDL_TEXTUREACCESS_STREAMING, 320, 200);
+
+    SDL_SetTextureScaleMode(sdl_texture,
+        SDL_SCALEMODE_NEAREST);
+    memset(sdl_screenbuf, 0, sizeof(sdl_screenbuf));
+}</code></pre>
+</div>
+</div>
+
+<h3>Side-by-Side: VL_FadeOut</h3>
+<div class="code-comparison">
+<div class="code-panel">
+<div class="code-label original">C Original (DOS)</div>
+<pre><code>void VL_FadeOut (int start, int end,
+    int red, int green, int blue, int steps)
+{
+    int i,j,orig,delta;
+    byte far *origptr, far *newptr;
+
+    VL_WaitVBL(1);
+    VL_GetPalette (&amp;palette1[0][0]);
+    _fmemcpy (palette2,palette1,768);
+
+    for (i=0;i&lt;steps;i++)
+    {
+        origptr = &amp;palette1[start][0];
+        newptr = &amp;palette2[start][0];
+        for (j=start;j&lt;=end;j++)
+        {
+            orig = *origptr++;
+            delta = red-orig;
+            *newptr++ = orig + delta * i / steps;
+            // ... green, blue similarly
+        }
+        VL_WaitVBL(1);
+        VL_SetPalette (&amp;palette2[0][0]);
+    }
+    VL_FillPalette (red,green,blue);
+    screenfaded = true;
+}</code></pre>
+</div>
+<div class="code-panel">
+<div class="code-label sdl3">C SDL3 Port</div>
+<pre><code>// Same algorithm, but palette is applied via
+// sdl_palette[] and rendered through SDL_Texture.
+// VL_SetPalette copies to sdl_palette[].
+// VL_WaitVBL calls SDL_Delay(vbls * 14).
+// VL_UpdateScreen converts indexed pixels to XRGB8888
+// using sdl_palette lookup, then presents via renderer.
+//
+// The fade logic itself is unchanged - it interpolates
+// between palette1 and palette2 over N steps,
+// calling VL_WaitVBL and VL_SetPalette each frame.</code></pre>
+</div>
+</div>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">Replace VGA register I/O with a 320x200 byte framebuffer (<code>sdl_screenbuf[]</code>). All plane-aware drawing becomes simple linear byte writes. <code>VL_UpdateScreen</code> converts indexed colors to XRGB8888 via palette lookup and uploads to an SDL texture. Latch memory simulated with a separate <code>latchmem[]</code> array. VGA wait-for-VBL becomes <code>SDL_Delay</code>.</div>
+</div>
+<div class="port-target">
+<div class="port-label csharp">C#</div>
+<div class="port-desc">Use <code>byte[]</code> framebuffer with SDL3-CS bindings. Palette as <code>byte[768]</code> or <code>Color[]</code> array. Drawing primitives become simple array indexing. Consider using <code>Span&lt;byte&gt;</code> for performance-critical blitting.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">Use <code>Uint8Array(64000)</code> as the indexed framebuffer. Convert to <code>ImageData</code> RGBA for canvas display. Palette as <code>Uint8Array(768)</code>. All VGA plane logic disappears entirely.</div>
+</div>
+<div class="port-target">
+<div class="port-label love2d">Love2D</div>
+<div class="port-desc">Use <code>love.image.newImageData(320,200)</code> for the framebuffer. Palette stored as a Lua table of {r,g,b} triples. Convert indexed buffer to RGBA ImageData on each frame, then draw with <code>love.graphics.draw</code>.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

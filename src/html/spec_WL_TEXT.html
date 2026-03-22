@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WL_TEXT.C - Text Display | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>WL_TEXT.C</span>
+</div>
+
+<h2>WL_TEXT.C &mdash; Text Display <span class="tag tag-game">Game</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> Rich text layout and display engine for in-game text screens (help, story text between episodes). Parses a simple markup language with commands for pictures, timed displays, centering, and page breaks. Used for the "Read This" help screens and end-of-episode story pages.</p>
+</div>
+
+<h3>Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">ShowArticle</span><span class="func-params">(char far *article)</span> &mdash; Display a multi-page text article with navigation</li>
+<li><span class="func-ret">void</span> <span class="func-name">HelpScreens</span><span class="func-params">(void)</span> &mdash; Show the help/instructions text</li>
+<li><span class="func-ret">void</span> <span class="func-name">EndText</span><span class="func-params">(void)</span> &mdash; Show end-of-episode story text</li>
+<li><span class="func-ret">void</span> <span class="func-name">PageLayout</span><span class="func-params">(boolean shownumber)</span> &mdash; Lay out one page of text with word wrapping</li>
+<li><span class="func-ret">void</span> <span class="func-name">BackPage</span><span class="func-params">(void)</span> &mdash; Navigate to previous page</li>
+<li><span class="func-ret">void</span> <span class="func-name">HandleCommand</span><span class="func-params">(void)</span> &mdash; Process a text markup command (^P, ^C, ^T, ^E, ^G, ^L)</li>
+<li><span class="func-ret">void</span> <span class="func-name">HandleWord</span><span class="func-params">(void)</span> &mdash; Process one word, handling line/page overflow</li>
+<li><span class="func-ret">void</span> <span class="func-name">HandleCtrls</span><span class="func-params">(void)</span> &mdash; Process control characters (newline, tab)</li>
+<li><span class="func-ret">void</span> <span class="func-name">NewLine</span><span class="func-params">(void)</span> &mdash; Move to next line, checking for page overflow</li>
+<li><span class="func-ret">void</span> <span class="func-name">RipToEOL</span><span class="func-params">(void)</span> &mdash; Skip to end of current line in text data</li>
+<li><span class="func-ret">int</span> <span class="func-name">ParseNumber</span><span class="func-params">(void)</span> &mdash; Parse a numeric value from text data</li>
+<li><span class="func-ret">void</span> <span class="func-name">ParsePicCommand</span><span class="func-params">(void)</span> &mdash; Parse ^P picture display command</li>
+<li><span class="func-ret">void</span> <span class="func-name">ParseTimedCommand</span><span class="func-params">(void)</span> &mdash; Parse ^T timed display command</li>
+<li><span class="func-ret">void</span> <span class="func-name">TimedPicCommand</span><span class="func-params">(void)</span> &mdash; Execute timed picture display</li>
+<li><span class="func-ret">void</span> <span class="func-name">CacheLayoutGraphics</span><span class="func-params">(void)</span> &mdash; Pre-cache graphics referenced by text</li>
+</ul>
+
+<h3>Text Markup Commands</h3>
+<table>
+<tr><th>Command</th><th>Description</th></tr>
+<tr><td>^P</td><td>Display a picture at current position</td></tr>
+<tr><td>^C</td><td>Center text on this line</td></tr>
+<tr><td>^T</td><td>Timed display (show picture for N tics)</td></tr>
+<tr><td>^E</td><td>End of article</td></tr>
+<tr><td>^G</td><td>Change font color</td></tr>
+<tr><td>^L</td><td>Page break (new page)</td></tr>
+<tr><td>^B</td><td>Set background color</td></tr>
+</table>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>WL_DEF.H</code> &mdash; Game definitions</li>
+<li><code>ID_VH.C</code> &mdash; Text and picture drawing</li>
+<li><code>ID_CA.C</code> &mdash; Graphics caching</li>
+<li><code>ID_IN.C</code> &mdash; Navigation input (PageUp/PageDown/Esc)</li>
+</ul>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">Direct translation. The text parser operates on a character pointer through the article data. Page navigation is a simple blocking loop. The ^T timed command uses VBL waits.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">The article viewer becomes an interactive component with page state. The text parser can be rewritten as a tokenizer that processes commands into a display list.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

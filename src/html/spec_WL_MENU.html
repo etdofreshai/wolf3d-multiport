@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WL_MENU.C - Menu System | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>WL_MENU.C</span>
+</div>
+
+<h2>WL_MENU.C &mdash; Menu System <span class="tag tag-game">Game</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> The complete menu system: main menu, new game (episode/difficulty selection), sound options, control configuration (keyboard/mouse/joystick binding), view size adjustment, load/save game, and quit confirmation. Uses a data-driven menu item system with the <code>HandleMenu</code> generic handler.</p>
+</div>
+
+<h3>Functions &mdash; Menu Pages</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">US_ControlPanel</span><span class="func-params">(byte scancode)</span> &mdash; Main entry point to the control panel (menu system)</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawMainMenu</span><span class="func-params">(void)</span> &mdash; Draw the main menu screen</li>
+<li><span class="func-ret">void</span> <span class="func-name">CP_NewGame</span><span class="func-params">(void)</span> &mdash; New game menu (episode + difficulty)</li>
+<li><span class="func-ret">void</span> <span class="func-name">CP_Sound</span><span class="func-params">(void)</span> &mdash; Sound options menu</li>
+<li><span class="func-ret">void</span> <span class="func-name">CP_Control</span><span class="func-params">(void)</span> &mdash; Control options menu</li>
+<li><span class="func-ret">int</span> <span class="func-name">CP_LoadGame</span><span class="func-params">(int quick)</span> &mdash; Load game menu</li>
+<li><span class="func-ret">int</span> <span class="func-name">CP_SaveGame</span><span class="func-params">(int quick)</span> &mdash; Save game menu</li>
+<li><span class="func-ret">void</span> <span class="func-name">CP_ChangeView</span><span class="func-params">(void)</span> &mdash; View size adjustment</li>
+<li><span class="func-ret">void</span> <span class="func-name">CP_Quit</span><span class="func-params">(void)</span> &mdash; Quit confirmation</li>
+<li><span class="func-ret">void</span> <span class="func-name">CP_ViewScores</span><span class="func-params">(void)</span> &mdash; High score display</li>
+<li><span class="func-ret">void</span> <span class="func-name">CP_ReadThis</span><span class="func-params">(void)</span> &mdash; Read This! help pages</li>
+<li><span class="func-ret">int</span> <span class="func-name">CP_EndGame</span><span class="func-params">(void)</span> &mdash; End current game confirmation</li>
+<li><span class="func-ret">int</span> <span class="func-name">CP_CheckQuick</span><span class="func-params">(unsigned scancode)</span> &mdash; Quick key handlers (F-keys for quick save/load/sound/quit)</li>
+</ul>
+
+<h3>Functions &mdash; Menu Engine</h3>
+<ul class="func-list">
+<li><span class="func-ret">int</span> <span class="func-name">HandleMenu</span><span class="func-params">(CP_iteminfo *item_i, CP_itemtype far *items, void (*routine)(int w))</span> &mdash; Generic menu handler: navigation, selection, scrolling</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawMenu</span><span class="func-params">(CP_iteminfo *item_i, CP_itemtype far *items)</span> &mdash; Render menu items</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawGun</span><span class="func-params">(CP_iteminfo *item_i, CP_itemtype far *items, int x, int *y, int which, int basey, void (*routine)(int))</span> &mdash; Draw animated cursor gun</li>
+<li><span class="func-ret">void</span> <span class="func-name">EraseGun</span><span class="func-params">(CP_iteminfo *item_i, CP_itemtype far *items, int x, int y, int which)</span> &mdash; Erase cursor gun</li>
+<li><span class="func-ret">void</span> <span class="func-name">ReadAnyControl</span><span class="func-params">(ControlInfo *ci)</span> &mdash; Read input from any device for menu navigation</li>
+<li><span class="func-ret">void</span> <span class="func-name">WaitKeyUp</span><span class="func-params">(void)</span> &mdash; Wait for all keys/buttons to be released</li>
+</ul>
+
+<h3>Functions &mdash; Utilities</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">SetupControlPanel</span><span class="func-params">(void)</span> &mdash; Cache menu graphics, save screen</li>
+<li><span class="func-ret">void</span> <span class="func-name">CleanupControlPanel</span><span class="func-params">(void)</span> &mdash; Free menu graphics, restore screen</li>
+<li><span class="func-ret">void</span> <span class="func-name">ClearMScreen</span><span class="func-params">(void)</span> &mdash; Clear menu screen area</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawWindow</span><span class="func-params">(int x, int y, int w, int h, int wcolor)</span> &mdash; Draw a colored window</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawOutline</span><span class="func-params">(int x, int y, int w, int h, int color1, int color2)</span> &mdash; Draw a 3D-look outline</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawStripes</span><span class="func-params">(int y)</span> &mdash; Draw the red/white stripes at top of menu</li>
+<li><span class="func-ret">int</span> <span class="func-name">Confirm</span><span class="func-params">(char far *string)</span> &mdash; Yes/No confirmation dialog</li>
+<li><span class="func-ret">void</span> <span class="func-name">Message</span><span class="func-params">(char far *string)</span> &mdash; Display a message box</li>
+<li><span class="func-ret">void</span> <span class="func-name">StartCPMusic</span><span class="func-params">(int song)</span> &mdash; Start menu background music</li>
+<li><span class="func-ret">void</span> <span class="func-name">CheckForEpisodes</span><span class="func-params">(void)</span> &mdash; Check which episode data files are present</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>WL_DEF.H</code> &mdash; Game definitions</li>
+<li><code>WL_MENU.H</code> &mdash; Menu item type definitions (CP_iteminfo, CP_itemtype)</li>
+<li><code>WL_MAIN.C</code> &mdash; ReadConfig, WriteConfig, SaveTheGame, LoadTheGame</li>
+<li><code>ID_VH.C</code> &mdash; Drawing (VWB_DrawPic, VWB_Bar, etc.)</li>
+<li><code>ID_IN.C</code> &mdash; Input for menu navigation</li>
+<li><code>ID_SD.C</code> &mdash; Sound/music mode setting</li>
+<li><code>ID_US_1.C</code> &mdash; Text printing, windows</li>
+</ul>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">The menu system is self-contained UI code. The main challenge is that <code>HandleMenu</code> uses a blocking loop &mdash; works fine in SDL since we can pump events. Control configuration needs to map SDL key names instead of DOS scan code names. Joystick calibration uses SDL gamepad API.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">The blocking menu loops must become async state machines. Each menu page becomes a state with enter/update/draw phases. The animated cursor gun and menu transitions need frame-by-frame handling.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

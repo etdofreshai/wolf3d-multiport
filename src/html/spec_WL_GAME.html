@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WL_GAME.C - Game Loop | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>WL_GAME.C</span>
+</div>
+
+<h2>WL_GAME.C &mdash; Game Loop <span class="tag tag-game">Game</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> Contains the outer game loop (<code>GameLoop</code>), level setup (<code>SetupGameLevel</code>), map scanning (<code>ScanInfoPlane</code>), play screen drawing, demo recording/playback control, death sequence, and the level-to-level progression logic. This is the bridge between the main menu system and the actual gameplay in <code>WL_PLAY</code>.</p>
+</div>
+
+<h3>Key Globals</h3>
+<table class="globals-table">
+<tr><th>Variable</th><th>Type</th><th>Description</th></tr>
+<tr><td>gamestate</td><td>gametype</td><td>Master game state (score, health, ammo, weapons, keys, level, difficulty)</td></tr>
+<tr><td>ingame</td><td>boolean</td><td>True while a game is active</td></tr>
+<tr><td>fizzlein</td><td>boolean</td><td>True to use fizzle-fade when entering a level</td></tr>
+<tr><td>latchpics[]</td><td>unsigned[NUMLATCHPICS]</td><td>Offsets to pictures in VGA latch memory</td></tr>
+</table>
+
+<h3>Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">GameLoop</span><span class="func-params">(void)</span> &mdash; Outer game loop: load level, play, check win/death/continue</li>
+<li><span class="func-ret">void</span> <span class="func-name">SetupGameLevel</span><span class="func-params">(void)</span> &mdash; Load map, initialize tile arrays, spawn actors and items</li>
+<li><span class="func-ret">void</span> <span class="func-name">ScanInfoPlane</span><span class="func-params">(void)</span> &mdash; Parse map info plane: spawn enemies, items, doors from tile values</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawPlayScreen</span><span class="func-params">(void)</span> &mdash; Draw the HUD status bar, weapon, face, score, etc.</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawPlayBorder</span><span class="func-params">(void)</span> &mdash; Draw border around viewport</li>
+<li><span class="func-ret">void</span> <span class="func-name">Died</span><span class="func-params">(void)</span> &mdash; Death sequence: spin camera, fade to red</li>
+<li><span class="func-ret">void</span> <span class="func-name">ClearMemory</span><span class="func-params">(void)</span> &mdash; Purge all cached assets for level transition</li>
+<li><span class="func-ret">void</span> <span class="func-name">PlaySoundLocGlobal</span><span class="func-params">(word s, fixed gx, fixed gy)</span> &mdash; Play positioned sound effect</li>
+<li><span class="func-ret">void</span> <span class="func-name">UpdateSoundLoc</span><span class="func-params">(void)</span> &mdash; Update stereo panning based on player position</li>
+<li><span class="func-ret">void</span> <span class="func-name">StartDemoRecord</span><span class="func-params">(int levelnumber)</span> &mdash; Begin recording a demo</li>
+<li><span class="func-ret">void</span> <span class="func-name">FinishDemoRecord</span><span class="func-params">(void)</span> &mdash; Finalize and save recorded demo</li>
+<li><span class="func-ret">void</span> <span class="func-name">RecordDemo</span><span class="func-params">(void)</span> &mdash; Interactive demo recording</li>
+<li><span class="func-ret">void</span> <span class="func-name">PlayDemo</span><span class="func-params">(int demonumber)</span> &mdash; Play back a recorded demo</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>WL_DEF.H</code> &mdash; All game definitions</li>
+<li><code>WL_PLAY.C</code> &mdash; PlayLoop (inner game loop)</li>
+<li><code>WL_ACT1.C, WL_ACT2.C</code> &mdash; Actor/door spawning</li>
+<li><code>WL_AGENT.C</code> &mdash; Player spawning, status bar drawing</li>
+<li><code>ID_CA.C</code> &mdash; Map loading, asset caching</li>
+<li><code>ID_VH.C</code> &mdash; LoadLatchMem, FizzleFade</li>
+</ul>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">Game logic is mostly portable. The <code>GameLoop</code> blocking-while structure works in SDL since we control the main loop. Level setup and map scanning are pure data manipulation. Sound positioning uses the same left/right angle calculation.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc"><code>GameLoop</code> must be restructured as a state machine since it cannot block. The death sequence (<code>Died</code>) with its spinning camera needs to yield frames. <code>ScanInfoPlane</code> is pure data parsing &mdash; straightforward translation.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

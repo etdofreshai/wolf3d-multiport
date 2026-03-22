@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WL_DEF.H - Main Definitions | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>WL_DEF.H</span>
+</div>
+
+<h2>WL_DEF.H &mdash; Main Definitions <span class="tag tag-game">Game</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> Master header for all Wolfenstein 3-D game code. Defines all game constants, data structures (player state, actor objects, door state, game state), enumerations (enemy types, weapon types, directions), macros, and extern declarations for cross-file globals. Every WL_*.C file includes this.</p>
+</div>
+
+<h3>Key Constants</h3>
+<table>
+<tr><th>Constant</th><th>Value</th><th>Description</th></tr>
+<tr><td>MAXACTORS</td><td>150</td><td>Maximum active actors per map</td></tr>
+<tr><td>MAXSTATS</td><td>400</td><td>Maximum static objects (items, decorations)</td></tr>
+<tr><td>MAXDOORS</td><td>64</td><td>Maximum sliding doors per map</td></tr>
+<tr><td>MAPSIZE</td><td>64</td><td>Map dimensions (64x64 tiles)</td></tr>
+<tr><td>VIEWWIDTH</td><td>256</td><td>Default viewport width in pixels</td></tr>
+<tr><td>VIEWHEIGHT</td><td>144</td><td>Default viewport height in pixels</td></tr>
+<tr><td>ANGLES</td><td>360</td><td>Number of angle divisions (fine angles = ANGLES*4)</td></tr>
+<tr><td>GLOBAL1</td><td>1&lt;&lt;16</td><td>One tile in fixed-point (65536)</td></tr>
+<tr><td>TILEGLOBAL</td><td>GLOBAL1</td><td>Alias for one tile unit</td></tr>
+<tr><td>MINDIST</td><td>0x5800</td><td>Minimum rendering distance</td></tr>
+<tr><td>PLAYERSIZE</td><td>MINDIST</td><td>Player collision radius</td></tr>
+<tr><td>PLAYERSPEED</td><td>3000</td><td>Walking speed (units per tic)</td></tr>
+<tr><td>RUNSPEED</td><td>6000</td><td>Running speed</td></tr>
+</table>
+
+<h3>Key Data Structures</h3>
+<pre><code>// Actor object - the main game entity
+typedef struct objstruct {
+    activetype  active;
+    int         ticcount;
+    classtype   obclass;
+    statetype   *state;
+
+    byte        flags;          // FL_SHOOTABLE, FL_BONUS, etc.
+    long        distance;       // for AI: distance to player
+    dirtype     dir;
+
+    fixed       x, y;           // 16.16 fixed-point world position
+    unsigned    tilex, tiley;   // tile position (x>>16, y>>16)
+    byte        areanumber;
+
+    int         viewx;          // screen x after projection
+    unsigned    viewheight;     // projected height on screen
+    fixed       transx, transy; // translated coordinates
+
+    int         angle;          // facing angle
+    int         hitpoints;
+    long        speed;
+
+    int         temp1, temp2, temp3;
+    struct objstruct *next, *prev;
+} objtype;</code></pre>
+
+<pre><code>// Game state - persistent across save/load
+typedef struct {
+    int     difficulty;
+    int     maession;
+    int     episode, secretcount, treasurecount, killcount;
+    int     secrettotal, treasuretotal, killtotal;
+    long    TimeCount;
+    long    killx, killy;
+    int     bestweapon, weapon, chosenweapon;
+    int     faceframe;
+    int     attackframe, attackcount, weaponframe;
+    int     keys;
+    int     lives, health, ammo, score;
+    int     nextextra;
+    int     mapon;
+    // ... weapon and item flags
+} gametype;</code></pre>
+
+<pre><code>// Door state
+typedef struct {
+    byte     tilex, tiley;
+    boolean  vertical;
+    byte     lock;
+    doortype action;
+    int      ticcount;
+    unsigned position;       // 0=closed, 0xFFFF=open
+} doorobj_t;</code></pre>
+
+<h3>Enumerations</h3>
+<dl>
+<dt>classtype</dt>
+<dd>nothing, playerobj, inertobj, guardobj, officerobj, ssobj, dogobj, bossobj, schabbobj, fakeobj, mechahitlerobj, mutantobj, ghostobj, ...</dd>
+<dt>weapontype</dt>
+<dd>wp_knife, wp_pistol, wp_machinegun, wp_chaingun</dd>
+<dt>dirtype</dt>
+<dd>north, northeast, east, southeast, south, southwest, west, northwest, nodir</dd>
+<dt>enemy_t</dt>
+<dd>en_guard, en_officer, en_ss, en_dog, en_boss, en_schabbs, en_fake, en_hitler, en_mutant, en_bj, en_gretel, en_gift, en_fat, ...</dd>
+</dl>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>ID_HEADS.H</code> &mdash; Engine types and includes</li>
+<li><code>WL_MENU.H</code> &mdash; Menu item types</li>
+<li><code>FOREIGN.H</code> / <code>SPANISH.H</code> &mdash; Localized string tables</li>
+<li><code>F_SPEAR.H</code> &mdash; Spear of Destiny-specific overrides</li>
+</ul>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">Most definitions carry over directly. Remove <code>far</code>/<code>_seg</code> qualifiers. The <code>fixed</code> type stays as <code>long</code> (32-bit). <code>SCREENSEG</code> constant no longer meaningful but kept for compatibility. <code>MK_FP</code> and segment math eliminated.</div>
+</div>
+<div class="port-target">
+<div class="port-label csharp">C#</div>
+<div class="port-desc">Structs become C# <code>struct</code> or <code>class</code>. The <code>objtype</code> linked list can use <code>LinkedList&lt;T&gt;</code> or manual next/prev references. Enums map directly. Fixed-point uses <code>int</code> (32-bit).</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">All structs become TypeScript interfaces or classes. Fixed-point arithmetic uses regular <code>number</code> (float64) with appropriate scaling, or a dedicated fixed-point helper class. Enums with <code>const enum</code>.</div>
+</div>
+<div class="port-target">
+<div class="port-label love2d">Love2D</div>
+<div class="port-desc">Structs become Lua tables. Constants as module-level variables. The linked list for actors becomes a Lua array with index-based iteration. Fixed-point may use integer math via <code>math.floor</code> or floating point.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

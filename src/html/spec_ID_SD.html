@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ID_SD.C - Sound Manager | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>ID_SD.C</span>
+</div>
+
+<h2>ID_SD.C &mdash; Sound Manager <span class="tag tag-engine">Engine</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> Manages all sound hardware: PC speaker, AdLib (OPL2) FM synthesis for music and sound effects, Sound Blaster for digitized audio, and the Disney Sound Source. Drives the timer interrupt (INT 8) which also provides the global <code>TimeCount</code> tick counter used throughout the game for timing.</p>
+<p><strong>Author:</strong> Jason Blochowiak, v1.2</p>
+</div>
+
+<h3>Key Globals</h3>
+<table class="globals-table">
+<tr><th>Variable</th><th>Type</th><th>Description</th></tr>
+<tr><td>TimeCount</td><td>longword</td><td>Global tick counter (70Hz), incremented by timer ISR</td></tr>
+<tr><td>SoundMode</td><td>SDMode</td><td>Current sound effect device (off/PC speaker/AdLib)</td></tr>
+<tr><td>MusicMode</td><td>SMMode</td><td>Current music device (off/AdLib)</td></tr>
+<tr><td>DigiMode</td><td>SDSMode</td><td>Current digitized sound device (off/SoundSource/SoundBlaster)</td></tr>
+<tr><td>AdLibPresent</td><td>boolean</td><td>AdLib card detected</td></tr>
+<tr><td>SoundBlasterPresent</td><td>boolean</td><td>Sound Blaster detected</td></tr>
+<tr><td>SoundSourcePresent</td><td>boolean</td><td>Sound Source detected</td></tr>
+<tr><td>DigiMap[]</td><td>int[LASTSOUND]</td><td>Maps sound effect numbers to digitized chunk numbers</td></tr>
+<tr><td>SoundTable</td><td>word *</td><td>Pointer to sound priority/info table</td></tr>
+</table>
+
+<h3>Functions (Public)</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">SD_Startup</span><span class="func-params">(void)</span> &mdash; Detect sound hardware, install timer ISR</li>
+<li><span class="func-ret">void</span> <span class="func-name">SD_Shutdown</span><span class="func-params">(void)</span> &mdash; Restore timer, silence all sound</li>
+<li><span class="func-ret">void</span> <span class="func-name">SD_PlaySound</span><span class="func-params">(soundnames sound)</span> &mdash; Start playing a sound effect</li>
+<li><span class="func-ret">void</span> <span class="func-name">SD_StopSound</span><span class="func-params">(void)</span> &mdash; Stop current sound effect</li>
+<li><span class="func-ret">void</span> <span class="func-name">SD_WaitSoundDone</span><span class="func-params">(void)</span> &mdash; Block until current sound finishes</li>
+<li><span class="func-ret">void</span> <span class="func-name">SD_MusicOn</span><span class="func-params">(void)</span> &mdash; Enable music playback</li>
+<li><span class="func-ret">void</span> <span class="func-name">SD_MusicOff</span><span class="func-params">(void)</span> &mdash; Stop music</li>
+<li><span class="func-ret">void</span> <span class="func-name">SD_StartMusic</span><span class="func-params">(MusicGroup far *music)</span> &mdash; Begin playing a music track</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">SD_SetSoundMode</span><span class="func-params">(SDMode mode)</span> &mdash; Switch sound effect device</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">SD_SetMusicMode</span><span class="func-params">(SMMode mode)</span> &mdash; Switch music device</li>
+<li><span class="func-ret">void</span> <span class="func-name">SD_SetDigiDevice</span><span class="func-params">(SDSMode mode)</span> &mdash; Switch digitized sound device</li>
+<li><span class="func-ret">void</span> <span class="func-name">SD_PlayDigitized</span><span class="func-params">(word which, int leftpos, int rightpos)</span> &mdash; Play a digitized sound with stereo positioning</li>
+<li><span class="func-ret">void</span> <span class="func-name">SD_StopDigitized</span><span class="func-params">(void)</span> &mdash; Stop digitized playback</li>
+<li><span class="func-ret">void</span> <span class="func-name">SD_SetPosition</span><span class="func-params">(int leftpos, int rightpos)</span> &mdash; Update stereo position of current digi sound</li>
+</ul>
+
+<h3>Internal / Timer Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void interrupt</span> <span class="func-name">SDL_t0Service</span><span class="func-params">(void)</span> &mdash; Timer 0 ISR: increments TimeCount, sequences AdLib music, updates PC speaker</li>
+<li><span class="func-ret">void</span> <span class="func-name">SDL_SetTimerSpeed</span><span class="func-params">(void)</span> &mdash; Reprogram PIT channel 0 rate</li>
+<li><span class="func-ret">void</span> <span class="func-name">SDL_ALPlaySound</span><span class="func-params">(AdLibSound far *sound)</span> &mdash; Start AdLib sound effect</li>
+<li><span class="func-ret">void</span> <span class="func-name">SDL_ALStopSound</span><span class="func-params">(void)</span> &mdash; Stop AdLib sound</li>
+<li><span class="func-ret">void</span> <span class="func-name">SDL_ALService</span><span class="func-params">(void)</span> &mdash; Service AdLib music sequencer (called from timer ISR)</li>
+<li><span class="func-ret">void</span> <span class="func-name">SDL_SBPlaySample</span><span class="func-params">(byte huge *data, longword len)</span> &mdash; Start Sound Blaster DMA playback</li>
+<li><span class="func-ret">void</span> <span class="func-name">SDL_SBStopSample</span><span class="func-params">(void)</span> &mdash; Stop Sound Blaster DMA</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">SDL_DetectAdLib</span><span class="func-params">(void)</span> &mdash; Probe for AdLib hardware</li>
+<li><span class="func-ret">void</span> <span class="func-name">SDL_StartSB</span><span class="func-params">(void)</span> &mdash; Initialize Sound Blaster (detect, reset DSP)</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>ID_HEADS.H</code> &mdash; Master include</li>
+<li><code>ID_SD.H</code> &mdash; Sound types and constants</li>
+<li><code>ID_SD_A.ASM</code> &mdash; Assembly: SDL_SetDS, SDL_IndicatePC, timer ISR wrappers</li>
+<li><code>AUDIO*.H</code> &mdash; Sound/music enumeration constants per game version</li>
+</ul>
+
+<div class="warning">
+<strong>Critical:</strong> The timer ISR is responsible for incrementing <code>TimeCount</code>, which is the master clock for the entire game. All timing &mdash; frame rate, animation, sound sequencing, demo playback &mdash; depends on this 70Hz counter. The SDL3 port replaces this with <code>SDL_GetTicks()</code> scaled appropriately.
+</div>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">Replace AdLib register programming with OPL3 emulation (or pre-rendered audio). Sound Blaster DMA replaced with SDL audio callbacks. <code>TimeCount</code> derived from <code>SDL_GetTicks()</code> at 70Hz granularity. PC speaker sounds can be synthesized as square waves. IMF music data fed to an OPL emulator or converted to a playable format.</div>
+</div>
+<div class="port-target">
+<div class="port-label csharp">C#</div>
+<div class="port-desc">Same approach via SDL3-CS audio API. OPL emulation library in C# or P/Invoke to native. TimeCount managed via <code>Stopwatch</code> or SDL ticks.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">Web Audio API for sound output. OPL emulation in JavaScript/WASM. <code>AudioWorklet</code> for low-latency mixing. <code>TimeCount</code> from <code>performance.now()</code> scaled to 70Hz ticks.</div>
+</div>
+<div class="port-target">
+<div class="port-label love2d">Love2D</div>
+<div class="port-desc"><code>love.audio</code> with SoundData for PCM output. OPL emulation in Lua or via FFI. <code>TimeCount</code> from <code>love.timer.getTime()</code> scaled to 70Hz. Music can use pre-rendered OGG/MP3 tracks.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

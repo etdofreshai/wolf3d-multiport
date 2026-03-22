@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WL_DRAW.C - Raycasting Renderer | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>WL_DRAW.C</span>
+</div>
+
+<h2>WL_DRAW.C &mdash; Raycasting Renderer <span class="tag tag-game">Game</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> The core 3D rendering engine. Implements raycasting to render walls, doors, and push-walls. Handles sprite projection and sorting, weapon overlay drawing, frame timing, and the triple-buffered page-flipping scheme. The raycaster uses DDA (Digital Differential Analyzer) to step through the tile grid for each screen column.</p>
+</div>
+
+<h3>Key Globals</h3>
+<table class="globals-table">
+<tr><th>Variable</th><th>Type</th><th>Description</th></tr>
+<tr><td>viewx, viewy</td><td>fixed</td><td>Camera position in world (16.16 fixed-point)</td></tr>
+<tr><td>viewangle</td><td>int</td><td>Camera facing angle (0-359)</td></tr>
+<tr><td>viewsin, viewcos</td><td>fixed</td><td>Precomputed sin/cos of viewangle</td></tr>
+<tr><td>wallheight[]</td><td>unsigned[MAXVIEWWIDTH]</td><td>Projected wall height for each screen column</td></tr>
+<tr><td>sintable[], costable[]</td><td>fixed[ANGLES+ANGLES/4]</td><td>Precomputed sine/cosine lookup tables</td></tr>
+<tr><td>finetangent[]</td><td>long[FINEANGLES/4]</td><td>Fine-grained tangent table for ray stepping</td></tr>
+<tr><td>pixelangle[]</td><td>int[MAXVIEWWIDTH]</td><td>Angle offset for each screen column</td></tr>
+<tr><td>screenloc[]</td><td>unsigned[3]</td><td>VGA offsets for triple-buffer pages</td></tr>
+<tr><td>frameon</td><td>long</td><td>Current frame number</td></tr>
+<tr><td>lasttimecount</td><td>long</td><td>TimeCount at start of previous frame</td></tr>
+</table>
+
+<h3>Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">ThreeDRefresh</span><span class="func-params">(void)</span> &mdash; Main render entry point: clear, raycast walls, draw sprites, flip</li>
+<li><span class="func-ret">void</span> <span class="func-name">WallRefresh</span><span class="func-params">(void)</span> &mdash; Cast rays for all screen columns (calls AsmRefresh or C equivalent)</li>
+<li><span class="func-ret">void</span> <span class="func-name">AsmRefresh</span><span class="func-params">(void)</span> &mdash; Assembly raycaster (in WL_DR_A.ASM, or C replacement)</li>
+<li><span class="func-ret">int</span> <span class="func-name">CalcHeight</span><span class="func-params">(void)</span> &mdash; Calculate wall column height from ray distance</li>
+<li><span class="func-ret">void</span> <span class="func-name">HitVertWall</span><span class="func-params">(void)</span> &mdash; Process vertical wall hit: determine texture, draw column</li>
+<li><span class="func-ret">void</span> <span class="func-name">HitHorizWall</span><span class="func-params">(void)</span> &mdash; Process horizontal wall hit</li>
+<li><span class="func-ret">void</span> <span class="func-name">HitVertDoor</span><span class="func-params">(void)</span> &mdash; Process vertical door hit (partially open)</li>
+<li><span class="func-ret">void</span> <span class="func-name">HitHorizDoor</span><span class="func-params">(void)</span> &mdash; Process horizontal door hit</li>
+<li><span class="func-ret">void</span> <span class="func-name">HitVertPWall</span><span class="func-params">(void)</span> &mdash; Process vertical push-wall hit</li>
+<li><span class="func-ret">void</span> <span class="func-name">HitHorizPWall</span><span class="func-params">(void)</span> &mdash; Process horizontal push-wall hit</li>
+<li><span class="func-ret">fixed</span> <span class="func-name">FixedByFrac</span><span class="func-params">(fixed a, fixed b)</span> &mdash; Multiply two 16.16 fixed-point values</li>
+<li><span class="func-ret">void</span> <span class="func-name">TransformActor</span><span class="func-params">(objtype *ob)</span> &mdash; Project actor from world to screen coordinates</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">TransformTile</span><span class="func-params">(int tx, int ty, int *dispx, int *dispheight)</span> &mdash; Project a tile position to screen</li>
+<li><span class="func-ret">int</span> <span class="func-name">CalcRotate</span><span class="func-params">(objtype *ob)</span> &mdash; Determine sprite rotation frame based on view angle</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawScaleds</span><span class="func-params">(void)</span> &mdash; Sort visible sprites by distance and draw back-to-front</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawPlayerWeapon</span><span class="func-params">(void)</span> &mdash; Draw weapon overlay sprite</li>
+<li><span class="func-ret">void</span> <span class="func-name">CalcTics</span><span class="func-params">(void)</span> &mdash; Calculate tics elapsed since last frame (frame timing)</li>
+<li><span class="func-ret">void</span> <span class="func-name">FixOfs</span><span class="func-params">(void)</span> &mdash; Advance triple-buffer page</li>
+<li><span class="func-ret">void</span> <span class="func-name">ClearScreen</span><span class="func-params">(void)</span> &mdash; Clear viewport (ceiling color top, floor color bottom)</li>
+<li><span class="func-ret">void</span> <span class="func-name">VGAClearScreen</span><span class="func-params">(void)</span> &mdash; Clear using VGA-specific methods</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>WL_DEF.H</code> &mdash; Game definitions</li>
+<li><code>WL_DR_A.ASM</code> / <code>WL_DR_A.C</code> &mdash; Assembly/C raycaster inner loop</li>
+<li><code>WL_SCALE.C</code> &mdash; Column/sprite scaling routines</li>
+<li><code>ID_VL.C</code> &mdash; Screen primitives</li>
+<li><code>ID_PM.C</code> &mdash; Wall texture and sprite page access</li>
+<li><code>ID_SD.C</code> &mdash; TimeCount for frame timing</li>
+</ul>
+
+<div class="note">
+<strong>Performance critical:</strong> This is the most performance-sensitive file in the codebase. The original uses heavy inline assembly for the raycaster inner loop and column scaling. The SDL3 port replaces this with optimized C. For TypeScript/Lua ports, this is where the most optimization effort will be needed.
+</div>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">The triple-buffer page system is replaced with a single 320x200 framebuffer. <code>FixOfs</code> becomes a no-op (or just calls <code>VL_UpdateScreen</code>). The raycaster core (DDA stepping) is pure math and translates directly. Wall/door column drawing writes to the linear framebuffer. The assembly <code>AsmRefresh</code> is replaced with <code>WL_DR_A.C</code>.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">Raycasting math uses <code>number</code> (float64) or integer emulation with <code>|0</code> truncation. Column drawing writes to <code>Uint8Array</code> or directly to <code>ImageData</code>. The main bottleneck is the per-column inner loop &mdash; consider WebAssembly for this if pure JS is too slow.</div>
+</div>
+<div class="port-target">
+<div class="port-label love2d">Love2D</div>
+<div class="port-desc">Raycasting in Lua/LuaJIT. Column drawing via ImageData pixel operations. LuaJIT FFI can help with the inner loop. Alternative: use <code>love.graphics</code> draw calls for scaled columns if ImageData is too slow.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

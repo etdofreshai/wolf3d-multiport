@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WL_STATE.C - Actor State Machine | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>WL_STATE.C</span>
+</div>
+
+<h2>WL_STATE.C &mdash; Actor State Machine <span class="tag tag-game">Game</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> Core actor AI infrastructure. Provides the state machine engine (state transitions, think function dispatch), movement and collision for AI actors, pathfinding direction selection (chase, dodge, run), line-of-sight checking, enemy alerting/sighting, and the kill/damage system.</p>
+</div>
+
+<h3>Functions &mdash; State Machine</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">SpawnNewObj</span><span class="func-params">(unsigned tilex, unsigned tiley, statetype *state)</span> &mdash; Allocate actor and set initial state</li>
+<li><span class="func-ret">void</span> <span class="func-name">NewState</span><span class="func-params">(objtype *ob, statetype *state)</span> &mdash; Transition actor to a new state</li>
+</ul>
+
+<h3>Functions &mdash; Movement</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">MoveObj</span><span class="func-params">(objtype *ob, long move)</span> &mdash; Move actor in its current direction by given distance</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">TryWalk</span><span class="func-params">(objtype *ob)</span> &mdash; Check if actor can walk one tile in its direction</li>
+<li><span class="func-ret">void</span> <span class="func-name">SelectChaseDir</span><span class="func-params">(objtype *ob)</span> &mdash; Choose direction toward player (A* lite)</li>
+<li><span class="func-ret">void</span> <span class="func-name">SelectDodgeDir</span><span class="func-params">(objtype *ob)</span> &mdash; Choose direction to dodge (perpendicular to player)</li>
+<li><span class="func-ret">void</span> <span class="func-name">SelectRunDir</span><span class="func-params">(objtype *ob)</span> &mdash; Choose direction away from player (retreat)</li>
+<li><span class="func-ret">void</span> <span class="func-name">SelectPathDir</span><span class="func-params">(objtype *ob)</span> &mdash; Follow patrol path markers</li>
+</ul>
+
+<h3>Functions &mdash; Combat</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">KillActor</span><span class="func-params">(objtype *ob)</span> &mdash; Kill an actor: set death state, drop item, update kill count</li>
+<li><span class="func-ret">void</span> <span class="func-name">DamageActor</span><span class="func-params">(objtype *ob, unsigned damage)</span> &mdash; Apply damage to actor, kill if hitpoints reach 0</li>
+<li><span class="func-ret">void</span> <span class="func-name">DropItem</span><span class="func-params">(stat_t itemtype, int tilex, int tiley)</span> &mdash; Drop a pickup item when actor dies</li>
+</ul>
+
+<h3>Functions &mdash; Sighting</h3>
+<ul class="func-list">
+<li><span class="func-ret">boolean</span> <span class="func-name">CheckLine</span><span class="func-params">(objtype *ob)</span> &mdash; Line-of-sight check from actor to player (traces through doors/tiles)</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">CheckSight</span><span class="func-params">(objtype *ob)</span> &mdash; Full sight check (area connectivity + line of sight)</li>
+<li><span class="func-ret">void</span> <span class="func-name">FirstSighting</span><span class="func-params">(objtype *ob)</span> &mdash; Actor sees player for first time: alert, play sound, switch to chase</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">SightPlayer</span><span class="func-params">(objtype *ob)</span> &mdash; Attempt to sight the player (random chance + CheckSight)</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>WL_DEF.H</code> &mdash; Game definitions (objtype, statetype, dirtype)</li>
+<li><code>WL_PLAY.C</code> &mdash; tilemap, actorat, actor list management</li>
+<li><code>WL_ACT1.C</code> &mdash; ConnectAreas, PlaceItemType (for dropped items)</li>
+<li><code>ID_SD.C</code> &mdash; Alert/death sounds</li>
+</ul>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">Pure game logic with fixed-point math. All functions are portable. The state machine pattern (statetype with function pointers for think/action) is a clean, portable design.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">The state machine translates well. <code>statetype</code> becomes an object with <code>think</code> and <code>action</code> as function references. <code>CheckLine</code> ray tracing through the tile grid uses integer stepping &mdash; straightforward to translate.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

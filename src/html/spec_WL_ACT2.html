@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WL_ACT2.C - Actors Part 2 (Enemies & AI) | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>WL_ACT2.C</span>
+</div>
+
+<h2>WL_ACT2.C &mdash; Actors Part 2: Enemies &amp; AI <span class="tag tag-game">Game</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> The largest source file. Contains all enemy spawning, AI think functions, state tables, boss behaviors, projectile handling, death animations, and the BJ victory sequence. Each enemy type has spawn, stand, path, chase, shoot, and die behaviors defined as state machine entries.</p>
+</div>
+
+<h3>Enemy Spawning</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">SpawnStand</span><span class="func-params">(enemy_t which, int tilex, int tiley, int dir)</span> &mdash; Spawn stationary guard</li>
+<li><span class="func-ret">void</span> <span class="func-name">SpawnPatrol</span><span class="func-params">(enemy_t which, int tilex, int tiley, int dir)</span> &mdash; Spawn patrolling guard</li>
+<li><span class="func-ret">void</span> <span class="func-name">SpawnDeadGuard</span><span class="func-params">(int tilex, int tiley)</span> &mdash; Spawn dead decoration guard</li>
+<li><span class="func-ret">void</span> <span class="func-name">SpawnBoss</span><span class="func-params">(int tilex, int tiley)</span> &mdash; Spawn Hans Grosse</li>
+<li><span class="func-ret">void</span> <span class="func-name">SpawnGretel</span><span class="func-params">(int tilex, int tiley)</span> &mdash; Spawn Gretel Grosse</li>
+<li><span class="func-ret">void</span> <span class="func-name">SpawnSchabbs</span><span class="func-params">(int tilex, int tiley)</span> &mdash; Spawn Dr. Schabbs</li>
+<li><span class="func-ret">void</span> <span class="func-name">SpawnFakeHitler</span><span class="func-params">(int tilex, int tiley)</span> &mdash; Spawn Fake Hitler (mecha)</li>
+<li><span class="func-ret">void</span> <span class="func-name">SpawnHitler</span><span class="func-params">(int tilex, int tiley)</span> &mdash; Spawn real Hitler</li>
+<li><span class="func-ret">void</span> <span class="func-name">SpawnGift</span><span class="func-params">(int tilex, int tiley)</span> &mdash; Spawn Otto Giftmacher</li>
+<li><span class="func-ret">void</span> <span class="func-name">SpawnFat</span><span class="func-params">(int tilex, int tiley)</span> &mdash; Spawn General Fettgesicht</li>
+<li><span class="func-ret">void</span> <span class="func-name">SpawnSpectre</span><span class="func-params">(int tilex, int tiley)</span> &mdash; Spawn Spectre ghost</li>
+<li><span class="func-ret">void</span> <span class="func-name">SpawnGhosts</span><span class="func-params">(int which, int tilex, int tiley)</span> &mdash; Spawn ghost enemies</li>
+</ul>
+
+<h3>AI Think Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">T_Stand</span><span class="func-params">(objtype *ob)</span> &mdash; Standing guard: check for player sighting</li>
+<li><span class="func-ret">void</span> <span class="func-name">T_Path</span><span class="func-params">(objtype *ob)</span> &mdash; Patrolling: follow path markers</li>
+<li><span class="func-ret">void</span> <span class="func-name">T_Chase</span><span class="func-params">(objtype *ob)</span> &mdash; Chasing player: pathfinding toward player</li>
+<li><span class="func-ret">void</span> <span class="func-name">T_DogChase</span><span class="func-params">(objtype *ob)</span> &mdash; Dog chase: similar to T_Chase but dogs bite</li>
+<li><span class="func-ret">void</span> <span class="func-name">T_Shoot</span><span class="func-params">(objtype *ob)</span> &mdash; Shooting at player</li>
+<li><span class="func-ret">void</span> <span class="func-name">T_Bite</span><span class="func-params">(objtype *ob)</span> &mdash; Dog bite attack</li>
+<li><span class="func-ret">void</span> <span class="func-name">T_Projectile</span><span class="func-params">(objtype *ob)</span> &mdash; Projectile movement (needles, rockets, fireballs)</li>
+<li><span class="func-ret">void</span> <span class="func-name">T_Schabb</span><span class="func-params">(objtype *ob)</span> &mdash; Dr. Schabbs boss AI</li>
+<li><span class="func-ret">void</span> <span class="func-name">T_Gift</span><span class="func-params">(objtype *ob)</span> &mdash; Otto Giftmacher boss AI</li>
+<li><span class="func-ret">void</span> <span class="func-name">T_Fat</span><span class="func-params">(objtype *ob)</span> &mdash; Fettgesicht boss AI</li>
+<li><span class="func-ret">void</span> <span class="func-name">T_Fake</span><span class="func-params">(objtype *ob)</span> &mdash; Fake Hitler / Mecha-Hitler AI</li>
+<li><span class="func-ret">void</span> <span class="func-name">T_Ghosts</span><span class="func-params">(objtype *ob)</span> &mdash; Ghost movement (pass through walls)</li>
+</ul>
+
+<h3>Action Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">A_DeathScream</span><span class="func-params">(objtype *ob)</span> &mdash; Play death sound based on enemy type</li>
+<li><span class="func-ret">void</span> <span class="func-name">A_Smoke</span><span class="func-params">(objtype *ob)</span> &mdash; Spawn smoke puff effect</li>
+<li><span class="func-ret">void</span> <span class="func-name">A_HitlerMorph</span><span class="func-params">(objtype *ob)</span> &mdash; Mecha-Hitler to real Hitler transformation</li>
+<li><span class="func-ret">void</span> <span class="func-name">A_StartDeathCam</span><span class="func-params">(objtype *ob)</span> &mdash; Trigger death camera for boss kills</li>
+<li><span class="func-ret">void</span> <span class="func-name">SpawnBJVictory</span><span class="func-params">(void)</span> &mdash; Spawn BJ Blazkowicz victory animation</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">ProjectileTryMove</span><span class="func-params">(objtype *ob)</span> &mdash; Check if projectile can move to new position</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">CheckPosition</span><span class="func-params">(objtype *ob)</span> &mdash; Verify actor position is valid</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>WL_DEF.H</code> &mdash; Game definitions, state tables</li>
+<li><code>WL_STATE.C</code> &mdash; AI movement helpers (SelectChaseDir, MoveObj, etc.)</li>
+<li><code>WL_AGENT.C</code> &mdash; Player damage (TakeDamage)</li>
+<li><code>ID_SD.C</code> &mdash; Sound effects</li>
+</ul>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">Pure game logic. The state tables (arrays of statetype structs with think/action function pointers) carry over directly. No platform-specific code.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">State tables can use objects with function references. The large number of enemy types and states makes this a tedious but mechanical translation. Function pointers in statetype become method references.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

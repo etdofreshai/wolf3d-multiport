@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>Wolf3D</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- SDL3 native library path - adjust as needed -->
+    <DefineConstants>GOODTIMES;ARTSEXTERN;DEMOSEXTERN;CARMACIZED</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- SDL3 C# bindings via P/Invoke - we provide our own minimal binding -->
+  </ItemGroup>
+
+</Project>

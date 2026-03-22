@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ID_CA.C - Cache Manager | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>ID_CA.C</span>
+</div>
+
+<h2>ID_CA.C &mdash; Cache Manager <span class="tag tag-engine">Engine</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> Manages loading and caching of all game assets from the three archive files: VGAGRAPH (graphics), MAPHEAD/GAMEMAPS (level maps), and AUDIOT/AUDIOHED (audio). Implements Huffman decompression, Carmack compression, and RLEW expansion for the packed asset data. Provides a level-based caching system where assets are marked as needed and batch-loaded.</p>
+<p><strong>Author:</strong> John Carmack (customized for Wolf3D)</p>
+</div>
+
+<h3>Key Globals</h3>
+<table class="globals-table">
+<tr><th>Variable</th><th>Type</th><th>Description</th></tr>
+<tr><td>grsegs[]</td><td>void _seg *[NUMCHUNKS]</td><td>Array of cached graphics chunk pointers</td></tr>
+<tr><td>grneeded[]</td><td>byte[NUMCHUNKS]</td><td>Bitmap of which chunks are needed at current cache level</td></tr>
+<tr><td>mapsegs[]</td><td>unsigned _seg *[MAPPLANES]</td><td>Pointers to decompressed map plane data (3 planes)</td></tr>
+<tr><td>mapheaderseg[]</td><td>maptype _seg *[NUMMAPS]</td><td>Map header info (plane offsets, dimensions)</td></tr>
+<tr><td>audiosegs[]</td><td>byte _seg *[NUMSNDCHUNKS]</td><td>Cached audio chunk pointers</td></tr>
+<tr><td>ca_levelbit</td><td>byte</td><td>Current cache level bitmask</td></tr>
+<tr><td>grstarts[]</td><td>long _seg *</td><td>Offset table for graphics file</td></tr>
+<tr><td>audiostarts[]</td><td>long _seg *</td><td>Offset table for audio file</td></tr>
+</table>
+
+<h3>Functions (Public)</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">CA_Startup</span><span class="func-params">(void)</span> &mdash; Open data files, load headers and dictionaries</li>
+<li><span class="func-ret">void</span> <span class="func-name">CA_Shutdown</span><span class="func-params">(void)</span> &mdash; Close all data files</li>
+<li><span class="func-ret">void</span> <span class="func-name">CA_CacheGrChunk</span><span class="func-params">(int chunk)</span> &mdash; Load and decompress a single graphics chunk</li>
+<li><span class="func-ret">void</span> <span class="func-name">CA_CacheScreen</span><span class="func-params">(int chunk)</span> &mdash; Load a full-screen graphic directly to VGA</li>
+<li><span class="func-ret">void</span> <span class="func-name">CA_CacheMap</span><span class="func-params">(int mapnum)</span> &mdash; Load and decompress a level map (all 3 planes)</li>
+<li><span class="func-ret">void</span> <span class="func-name">CA_CacheAudioChunk</span><span class="func-params">(int chunk)</span> &mdash; Load an audio chunk</li>
+<li><span class="func-ret">void</span> <span class="func-name">CA_LoadAllSounds</span><span class="func-params">(void)</span> &mdash; Load all sound effects for current level</li>
+<li><span class="func-ret">void</span> <span class="func-name">CA_UpLevel</span><span class="func-params">(void)</span> &mdash; Push cache level (new assets needed)</li>
+<li><span class="func-ret">void</span> <span class="func-name">CA_DownLevel</span><span class="func-params">(void)</span> &mdash; Pop cache level (mark previous assets purgeable)</li>
+<li><span class="func-ret">void</span> <span class="func-name">CA_ClearMarks</span><span class="func-params">(void)</span> &mdash; Clear needed marks at current level</li>
+<li><span class="func-ret">void</span> <span class="func-name">CA_ClearAllMarks</span><span class="func-params">(void)</span> &mdash; Clear all needed marks</li>
+<li><span class="func-ret">void</span> <span class="func-name">CA_CacheMarks</span><span class="func-params">(void)</span> &mdash; Batch-load all chunks marked as needed</li>
+<li><span class="func-ret">void</span> <span class="func-name">CA_SetGrPurge</span><span class="func-params">(void)</span> &mdash; Mark loaded but unneeded graphics as purgeable</li>
+<li><span class="func-ret">void</span> <span class="func-name">CA_SetAllPurge</span><span class="func-params">(void)</span> &mdash; Mark everything purgeable</li>
+</ul>
+
+<h3>Compression Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">CAL_HuffExpand</span><span class="func-params">(byte huge *source, byte huge *dest, long length, huffnode *table)</span> &mdash; Huffman decompression</li>
+<li><span class="func-ret">void</span> <span class="func-name">CAL_CarmackExpand</span><span class="func-params">(unsigned far *source, unsigned far *dest, unsigned length)</span> &mdash; Carmack decompression (near/far word references)</li>
+<li><span class="func-ret">void</span> <span class="func-name">CA_RLEWexpand</span><span class="func-params">(unsigned huge *source, unsigned huge *dest, long length, unsigned rlewtag)</span> &mdash; RLEW (Run-Length Encoded Word) expansion</li>
+<li><span class="func-ret">long</span> <span class="func-name">CA_RLEWCompress</span><span class="func-params">(unsigned huge *source, long length, unsigned huge *dest, unsigned rlewtag)</span> &mdash; RLEW compression</li>
+</ul>
+
+<h3>File I/O Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">boolean</span> <span class="func-name">CA_FarRead</span><span class="func-params">(int handle, byte far *dest, long length)</span> &mdash; Read from file to far memory</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">CA_FarWrite</span><span class="func-params">(int handle, byte far *source, long length)</span> &mdash; Write from far memory to file</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">CA_ReadFile</span><span class="func-params">(char *filename, memptr *ptr)</span> &mdash; Read entire file into allocated memory</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">CA_LoadFile</span><span class="func-params">(char *filename, memptr *ptr)</span> &mdash; Load file, allocating exact-size memory</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>ID_HEADS.H</code> &mdash; Master include</li>
+<li><code>ID_CA.H</code> &mdash; Cache types and constants</li>
+<li><code>ID_MM.C</code> &mdash; Memory allocation (MM_GetPtr, MM_FreePtr, MM_SetPurge)</li>
+<li><code>GFXV_*.H / GFXE_*.H</code> &mdash; Graphics chunk enumeration per version</li>
+<li><code>MAPS*.H</code> &mdash; Map enumeration per version</li>
+<li><code>AUDIO*.H</code> &mdash; Audio chunk enumeration per version</li>
+</ul>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">File I/O switches from DOS <code>open</code>/<code>read</code> to standard <code>fopen</code>/<code>fread</code>. The <code>far</code>/<code>huge</code> pointer qualifiers are removed. Decompression algorithms (Huffman, Carmack, RLEW) are portable C and need minimal changes. The segment-based memory pointers become regular pointers.</div>
+</div>
+<div class="port-target">
+<div class="port-label csharp">C#</div>
+<div class="port-desc"><code>FileStream</code>/<code>BinaryReader</code> for file I/O. Decompression algorithms translated to use <code>byte[]</code> and <code>Span&lt;byte&gt;</code>. Graphics chunks stored as managed arrays.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">Asset files loaded via <code>fetch()</code> into <code>ArrayBuffer</code>. Decompression uses <code>DataView</code> for word-level access. All decompression must handle endianness (original is little-endian x86).</div>
+</div>
+<div class="port-target">
+<div class="port-label love2d">Love2D</div>
+<div class="port-desc"><code>love.filesystem</code> for file access. Decompression in Lua using string.byte/char or FFI buffers. Performance-sensitive decompression may benefit from LuaJIT FFI.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

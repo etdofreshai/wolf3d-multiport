@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WL_PLAY.C - Play Loop | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>WL_PLAY.C</span>
+</div>
+
+<h2>WL_PLAY.C &mdash; Play Loop <span class="tag tag-game">Game</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> The inner gameplay loop. Runs each frame: polls controls, processes all actors, handles music, manages palette shifts (damage/bonus flashes), checks debug keys, and calls <code>ThreeDRefresh</code> for rendering. Also contains actor list management and the control polling subsystem.</p>
+</div>
+
+<h3>Key Globals</h3>
+<table class="globals-table">
+<tr><th>Variable</th><th>Type</th><th>Description</th></tr>
+<tr><td>objlist[]</td><td>objtype[MAXACTORS]</td><td>Static array of actor objects</td></tr>
+<tr><td>player</td><td>objtype *</td><td>Pointer to the player object in objlist</td></tr>
+<tr><td>tilemap[][]</td><td>byte[64][64]</td><td>Wall tile values (0=empty, >0=wall texture)</td></tr>
+<tr><td>actorat[][]</td><td>objtype *[64][64]</td><td>Actor occupying each tile (or door pointer)</td></tr>
+<tr><td>spotvis[][]</td><td>byte[64][64]</td><td>Visibility flags per tile (set by raycaster)</td></tr>
+<tr><td>tics</td><td>unsigned</td><td>Number of ticks elapsed this frame</td></tr>
+<tr><td>playstate</td><td>exit_t</td><td>Current play state (playing, completed, died, warped, etc.)</td></tr>
+<tr><td>madenoise</td><td>boolean</td><td>Player made noise this tic (alerts enemies)</td></tr>
+</table>
+
+<h3>Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">PlayLoop</span><span class="func-params">(void)</span> &mdash; Inner game loop: poll input, update actors, render, repeat until exit</li>
+<li><span class="func-ret">void</span> <span class="func-name">PollControls</span><span class="func-params">(void)</span> &mdash; Read input from active device (calls PollKeyboard*, PollMouse*, PollJoystick*)</li>
+<li><span class="func-ret">void</span> <span class="func-name">PollKeyboardButtons</span><span class="func-params">(void)</span> &mdash; Check keyboard for fire/use/run buttons</li>
+<li><span class="func-ret">void</span> <span class="func-name">PollKeyboardMove</span><span class="func-params">(void)</span> &mdash; Check keyboard for movement/strafe</li>
+<li><span class="func-ret">void</span> <span class="func-name">PollMouseButtons</span><span class="func-params">(void)</span> &mdash; Check mouse buttons</li>
+<li><span class="func-ret">void</span> <span class="func-name">PollMouseMove</span><span class="func-params">(void)</span> &mdash; Check mouse movement for turning/strafing</li>
+<li><span class="func-ret">void</span> <span class="func-name">PollJoystickButtons</span><span class="func-params">(void)</span> &mdash; Check joystick buttons</li>
+<li><span class="func-ret">void</span> <span class="func-name">PollJoystickMove</span><span class="func-params">(void)</span> &mdash; Check joystick axes</li>
+<li><span class="func-ret">void</span> <span class="func-name">CheckKeys</span><span class="func-params">(void)</span> &mdash; Handle system keys (Esc=menu, F-keys, Pause)</li>
+<li><span class="func-ret">void</span> <span class="func-name">InitActorList</span><span class="func-params">(void)</span> &mdash; Reset actor free list and active list</li>
+<li><span class="func-ret">void</span> <span class="func-name">GetNewActor</span><span class="func-params">(void)</span> &mdash; Allocate an actor from the free list</li>
+<li><span class="func-ret">void</span> <span class="func-name">RemoveObj</span><span class="func-params">(objtype *gone)</span> &mdash; Return actor to free list</li>
+<li><span class="func-ret">void</span> <span class="func-name">DoActor</span><span class="func-params">(objtype *ob)</span> &mdash; Process one actor for one tic</li>
+<li><span class="func-ret">void</span> <span class="func-name">StopMusic</span><span class="func-params">(void)</span> &mdash; Stop current music track</li>
+<li><span class="func-ret">void</span> <span class="func-name">StartMusic</span><span class="func-params">(void)</span> &mdash; Start level music</li>
+<li><span class="func-ret">void</span> <span class="func-name">InitRedShifts</span><span class="func-params">(void)</span> &mdash; Precompute palette shift tables for damage/bonus</li>
+<li><span class="func-ret">void</span> <span class="func-name">UpdatePaletteShifts</span><span class="func-params">(void)</span> &mdash; Apply current palette shift (damage red, bonus white)</li>
+<li><span class="func-ret">void</span> <span class="func-name">StartDamageFlash</span><span class="func-params">(int damage)</span> &mdash; Trigger red damage palette shift</li>
+<li><span class="func-ret">void</span> <span class="func-name">StartBonusFlash</span><span class="func-params">(void)</span> &mdash; Trigger white bonus pickup flash</li>
+<li><span class="func-ret">void</span> <span class="func-name">CenterWindow</span><span class="func-params">(word w, word h)</span> &mdash; Draw centered text window</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>WL_DEF.H</code> &mdash; All game definitions</li>
+<li><code>WL_DRAW.C</code> &mdash; ThreeDRefresh (rendering)</li>
+<li><code>WL_AGENT.C</code> &mdash; T_Player, T_Attack (player think)</li>
+<li><code>WL_STATE.C</code> &mdash; Actor AI state machine</li>
+<li><code>WL_DEBUG.C</code> &mdash; Debug key handling</li>
+<li><code>ID_IN.C</code> &mdash; Input reading</li>
+<li><code>ID_SD.C</code> &mdash; Music control, TimeCount</li>
+</ul>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc"><code>PlayLoop</code> works as-is since it already loops on a frame-by-frame basis. Control polling adapts to SDL events. Palette shifts apply to the <code>sdl_palette</code> array. The actor list management is pure C data structure manipulation.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc"><code>PlayLoop</code> becomes a per-frame function called from <code>requestAnimationFrame</code>. The <code>while(playstate == ex_stillplaying)</code> loop becomes implicit in the frame callback. All control polling uses DOM events cached from the event listener.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

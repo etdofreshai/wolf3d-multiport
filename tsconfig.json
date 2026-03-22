@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "outDir": "./dist",
+    "rootDir": "./src/typescript-port",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/typescript-port/*"]
+    }
+  },
+  "include": ["src/typescript-port/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

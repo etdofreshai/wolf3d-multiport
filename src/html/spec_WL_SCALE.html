@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WL_SCALE.C - Sprite/Column Scaling | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>WL_SCALE.C</span>
+</div>
+
+<h2>WL_SCALE.C &mdash; Sprite/Column Scaling <span class="tag tag-game">Game</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> Generates compiled (self-modifying) scaling routines at runtime for drawing wall texture columns and sprites at various heights. The original creates x86 machine code in memory that draws scaled columns as fast as possible. Also contains the sprite drawing entry points.</p>
+</div>
+
+<h3>Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">SetupScaling</span><span class="func-params">(int maxscaleheight)</span> &mdash; Generate compiled scaling routines for all needed heights</li>
+<li><span class="func-ret">unsigned</span> <span class="func-name">BuildCompScale</span><span class="func-params">(int height, memptr *finalspot)</span> &mdash; Build one compiled scaler for a specific height</li>
+<li><span class="func-ret">void</span> <span class="func-name">ScaleShape</span><span class="func-params">(int xcenter, int shapenum, unsigned height)</span> &mdash; Draw a scaled sprite centered at xcenter</li>
+<li><span class="func-ret">void</span> <span class="func-name">SimpleScaleShape</span><span class="func-params">(int xcenter, int shapenum, unsigned height)</span> &mdash; Simplified sprite scaler (for weapon overlay)</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>WL_DEF.H</code> &mdash; Game definitions</li>
+<li><code>ID_PM.C</code> &mdash; PM_GetPage for texture data</li>
+<li><code>ID_MM.C</code> &mdash; MM_GetPtr for scaler allocation</li>
+<li><code>ID_VL.C</code> &mdash; Screen buffer access</li>
+</ul>
+
+<div class="warning">
+<strong>Heavy porting effort:</strong> The compiled scalers generate x86 machine code at runtime. This is the single most DOS-specific technique in the codebase. Every port must replace this with a general-purpose C/language scaling loop.
+</div>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">Replace compiled scalers with C scaling loops. For each column: calculate source texel step based on height, iterate down the destination column, sample the source texture at the appropriate texel. Wall columns are 64 pixels tall in the texture. Sprites use the shape format (column-based with post runs). Performance is adequate on modern CPUs without self-modifying code.</div>
+</div>
+<div class="port-target">
+<div class="port-label csharp">C#</div>
+<div class="port-desc">Same approach: C# scaling loops with <code>Span&lt;byte&gt;</code> for the inner loop. The texel stepping can use fixed-point or floating-point.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">Scaling loops writing to <code>Uint8Array</code> or <code>Uint32Array</code> (pre-paletted). This is the inner-most rendering loop and benefits from keeping the typed array operations tight.</div>
+</div>
+<div class="port-target">
+<div class="port-label love2d">Love2D</div>
+<div class="port-desc">Per-pixel scaling via ImageData, or use <code>love.graphics.draw</code> with quad sub-rectangles for each column slice. The latter leverages GPU acceleration and may be faster than CPU pixel loops.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ID_VH.C - Video High-Level | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>ID_VH.C</span>
+</div>
+
+<h2>ID_VH.C &mdash; Video High-Level <span class="tag tag-engine">Engine</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> High-level video routines built on top of <code>ID_VL</code>. Provides proportional font rendering, picture drawing, double-buffer update management, the FizzleFade transition effect, and Wolf3D-specific routines like <code>LatchDrawPic</code> and <code>LoadLatchMem</code>. This is the layer that game code calls for 2D drawing.</p>
+</div>
+
+<h3>Key Globals</h3>
+<table class="globals-table">
+<tr><th>Variable</th><th>Type</th><th>Description</th></tr>
+<tr><td>update[][]</td><td>byte[UPDATEHIGH][UPDATEWIDE]</td><td>Dirty-tile bitmap for double-buffer updates</td></tr>
+<tr><td>pictable</td><td>pictabletype _seg *</td><td>Width/height table for cached pictures</td></tr>
+<tr><td>px, py</td><td>int</td><td>Current text print position</td></tr>
+<tr><td>fontcolor, backcolor</td><td>byte</td><td>Current font and background colors</td></tr>
+<tr><td>fontnumber</td><td>int</td><td>Current font index (0=small, 1=large)</td></tr>
+<tr><td>bufferwidth, bufferheight</td><td>int</td><td>Dimensions of last drawn string</td></tr>
+</table>
+
+<h3>Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">VW_DrawPropString</span><span class="func-params">(char far *string)</span> &mdash; Draw proportionally-spaced string at px,py</li>
+<li><span class="func-ret">void</span> <span class="func-name">VW_DrawColorPropString</span><span class="func-params">(char far *string)</span> &mdash; Draw string with color cycling per scanline</li>
+<li><span class="func-ret">void</span> <span class="func-name">VL_MungePic</span><span class="func-params">(byte far *source, unsigned width, unsigned height)</span> &mdash; Rearrange linear pic data into planar format</li>
+<li><span class="func-ret">void</span> <span class="func-name">VWL_MeasureString</span><span class="func-params">(char far *string, word *width, word *height, fontstruct _seg *font)</span> &mdash; Measure string pixel dimensions</li>
+<li><span class="func-ret">void</span> <span class="func-name">VW_MeasurePropString</span><span class="func-params">(char far *string, word *width, word *height)</span> &mdash; Measure string using current proportional font</li>
+<li><span class="func-ret">void</span> <span class="func-name">VW_MeasureMPropString</span><span class="func-params">(char far *string, word *width, word *height)</span> &mdash; Measure string using masked proportional font</li>
+<li><span class="func-ret">int</span> <span class="func-name">VW_MarkUpdateBlock</span><span class="func-params">(int x1, int y1, int x2, int y2)</span> &mdash; Mark tiles dirty in the update buffer</li>
+<li><span class="func-ret">void</span> <span class="func-name">VWB_DrawTile8</span><span class="func-params">(int x, int y, int tile)</span> &mdash; Draw 8x8 tile with update tracking</li>
+<li><span class="func-ret">void</span> <span class="func-name">VWB_DrawPic</span><span class="func-params">(int x, int y, int chunknum)</span> &mdash; Draw cached picture with update tracking</li>
+<li><span class="func-ret">void</span> <span class="func-name">VWB_DrawPropString</span><span class="func-params">(char far *string)</span> &mdash; Draw string with update tracking</li>
+<li><span class="func-ret">void</span> <span class="func-name">VWB_Bar</span><span class="func-params">(int x, int y, int width, int height, int color)</span> &mdash; Draw bar with update tracking</li>
+<li><span class="func-ret">void</span> <span class="func-name">VWB_Plot</span><span class="func-params">(int x, int y, int color)</span> &mdash; Plot pixel with update tracking</li>
+<li><span class="func-ret">void</span> <span class="func-name">VWB_Hlin</span><span class="func-params">(int x1, int x2, int y, int color)</span> &mdash; Horizontal line with update tracking</li>
+<li><span class="func-ret">void</span> <span class="func-name">VWB_Vlin</span><span class="func-params">(int y1, int y2, int x, int color)</span> &mdash; Vertical line with update tracking</li>
+<li><span class="func-ret">void</span> <span class="func-name">VW_UpdateScreen</span><span class="func-params">(void)</span> &mdash; Flip buffer to display</li>
+<li><span class="func-ret">void</span> <span class="func-name">LatchDrawPic</span><span class="func-params">(unsigned x, unsigned y, unsigned picnum)</span> &mdash; Draw picture from latch memory (VGA-to-VGA copy)</li>
+<li><span class="func-ret">void</span> <span class="func-name">LoadLatchMem</span><span class="func-params">(void)</span> &mdash; Load tile8s and pictures into VGA latch memory</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">FizzleFade</span><span class="func-params">(unsigned source, unsigned dest, unsigned width, unsigned height, unsigned frames, boolean abortable)</span> &mdash; Pseudo-random pixel dissolve transition</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>ID_HEADS.H</code> &mdash; Master include (pulls in all ID engine headers)</li>
+<li><code>ID_VL.C</code> &mdash; Low-level VGA primitives</li>
+<li><code>ID_CA.C</code> &mdash; Cache manager (for grsegs[], pictable)</li>
+<li><code>ID_MM.C</code> &mdash; Memory manager (MM_GetPtr, MM_FreePtr)</li>
+<li><code>ID_VH_A.ASM</code> &mdash; Assembly: VH_UpdateScreen</li>
+</ul>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc"><code>VL_MungePic</code> is simplified since there are no VGA planes. The VWB_* double-buffer wrappers still mark dirty regions but the update mechanism can be simplified to just redraw the whole 320x200 buffer each frame. <code>FizzleFade</code> works on the linear buffer using the same LFSR algorithm but writes individual pixels instead of VGA plane-masked bytes. <code>LoadLatchMem</code> stores deplanarized graphics into the <code>latchmem[]</code> array.</div>
+</div>
+<div class="port-target">
+<div class="port-label csharp">C#</div>
+<div class="port-desc">Font rendering can use the same pixel-by-pixel approach or be accelerated with span copies. The update block tracking can be simplified to full-screen redraw. <code>FizzleFade</code> LFSR algorithm is portable as-is.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">All drawing writes to a <code>Uint8Array</code> framebuffer. Font data extracted from graphics lumps at load time. <code>FizzleFade</code> must be converted from a blocking loop to an async/frame-callback pattern.</div>
+</div>
+<div class="port-target">
+<div class="port-label love2d">Love2D</div>
+<div class="port-desc">Drawing primitives write to ImageData. <code>FizzleFade</code> needs coroutine-based yielding per frame instead of a blocking loop. Font rendering pixel-by-pixel via <code>imageData:setPixel()</code>.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

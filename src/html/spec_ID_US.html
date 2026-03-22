@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ID_US_1.C - User Manager | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>ID_US_1.C</span>
+</div>
+
+<h2>ID_US_1.C &mdash; User Manager <span class="tag tag-engine">Engine</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> General user-interface support routines. Handles windowed text printing, parameter checking, hard error handling, and maintains the high score table and save game slots. Provides the text printing system used by menus and in-game messages.</p>
+<p><strong>Author:</strong> Jason Blochowiak, v1.1d1</p>
+</div>
+
+<h3>Key Globals</h3>
+<table class="globals-table">
+<tr><th>Variable</th><th>Type</th><th>Description</th></tr>
+<tr><td>PrintX, PrintY</td><td>word</td><td>Current text cursor position (pixel coords)</td></tr>
+<tr><td>WindowX, WindowY</td><td>word</td><td>Current text window origin</td></tr>
+<tr><td>WindowW, WindowH</td><td>word</td><td>Current text window dimensions</td></tr>
+<tr><td>Scores[]</td><td>HighScore[MaxScores]</td><td>High score table (7 entries)</td></tr>
+<tr><td>Games[]</td><td>SaveGame[MaxSaveGames]</td><td>Save game slot info</td></tr>
+<tr><td>NoWait</td><td>boolean</td><td>Skip intro screens (NOWAIT parameter)</td></tr>
+</table>
+
+<h3>Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">US_Startup</span><span class="func-params">(void)</span> &mdash; Initialize user manager</li>
+<li><span class="func-ret">void</span> <span class="func-name">US_Shutdown</span><span class="func-params">(void)</span> &mdash; Shut down user manager</li>
+<li><span class="func-ret">void</span> <span class="func-name">US_Print</span><span class="func-params">(char far *s)</span> &mdash; Print string at PrintX,PrintY with word wrap</li>
+<li><span class="func-ret">void</span> <span class="func-name">US_PrintUnsigned</span><span class="func-params">(longword n)</span> &mdash; Print unsigned number</li>
+<li><span class="func-ret">void</span> <span class="func-name">US_PrintSigned</span><span class="func-params">(long n)</span> &mdash; Print signed number</li>
+<li><span class="func-ret">void</span> <span class="func-name">US_CPrint</span><span class="func-params">(char far *s)</span> &mdash; Print centered string</li>
+<li><span class="func-ret">void</span> <span class="func-name">US_CPrintLine</span><span class="func-params">(char far *s)</span> &mdash; Print centered string with newline</li>
+<li><span class="func-ret">void</span> <span class="func-name">US_ClearWindow</span><span class="func-params">(void)</span> &mdash; Clear current text window</li>
+<li><span class="func-ret">void</span> <span class="func-name">US_DrawWindow</span><span class="func-params">(word x, word y, word w, word h)</span> &mdash; Draw bordered window</li>
+<li><span class="func-ret">void</span> <span class="func-name">US_CenterWindow</span><span class="func-params">(word w, word h)</span> &mdash; Draw centered bordered window</li>
+<li><span class="func-ret">int</span> <span class="func-name">US_CheckParm</span><span class="func-params">(char far *parm, char far **strings)</span> &mdash; Check command-line parameter against string list</li>
+<li><span class="func-ret">void</span> <span class="func-name">US_ControlPanel</span><span class="func-params">(byte scancode)</span> &mdash; Enter the control panel menu system</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>ID_HEADS.H</code> &mdash; Master include</li>
+<li><code>ID_US.H</code> &mdash; User system types</li>
+<li><code>ID_VH.C</code> &mdash; Drawing routines (VWB_DrawPropString, VWB_Bar)</li>
+<li><code>ID_IN.C</code> &mdash; Input for menu navigation</li>
+<li><code>ID_US_A.ASM</code> &mdash; Assembly helper (random number generator)</li>
+</ul>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">Mostly portable C. The DOS hard error handler (<code>USL_HardError</code>) is removed. <code>US_CheckParm</code> works with standard argc/argv. The text printing system calls through function pointers (<code>USL_MeasureString</code>, <code>USL_DrawString</code>) that work unchanged.</div>
+</div>
+<div class="port-target">
+<div class="port-label csharp">C#</div>
+<div class="port-desc">Direct translation. String handling uses <code>string</code> or <code>ReadOnlySpan&lt;char&gt;</code>. The function-pointer callbacks become delegates or interface methods.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">String handling natural in JS. Window drawing and text output write to the framebuffer. Command-line parameter checking adapts to URL parameters or startup config.</div>
+</div>
+<div class="port-target">
+<div class="port-label love2d">Love2D</div>
+<div class="port-desc">Text printing and window drawing translate directly. Lua string handling simplifies much of the code. Save games use <code>love.filesystem</code> for persistence.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

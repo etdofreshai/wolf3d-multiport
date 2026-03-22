@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ID_PM.C - Page Manager | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>ID_PM.C</span>
+</div>
+
+<h2>ID_PM.C &mdash; Page Manager <span class="tag tag-engine">Engine</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> Virtual memory system for the VSWAP file. Manages loading of wall textures, sprite frames, and digitized sounds on demand from disk into main memory, EMS, or XMS. Implements a page-based LRU cache with thrashing detection. The VSWAP file is divided into fixed-size 4096-byte pages.</p>
+<p><strong>Author:</strong> Jason Blochowiak, v1.0</p>
+</div>
+
+<h3>Key Globals</h3>
+<table class="globals-table">
+<tr><th>Variable</th><th>Type</th><th>Description</th></tr>
+<tr><td>ChunksInFile</td><td>word</td><td>Total number of pages in VSWAP file</td></tr>
+<tr><td>PMSpriteStart</td><td>word</td><td>First page index that contains sprite data</td></tr>
+<tr><td>PMSoundStart</td><td>word</td><td>First page index that contains sound data</td></tr>
+<tr><td>PMPages</td><td>PageListStruct far *</td><td>Page table: status, location, LRU info for each page</td></tr>
+<tr><td>MainMemPages[]</td><td>memptr[PMMaxMainMem]</td><td>Pool of main-memory page buffers</td></tr>
+<tr><td>PMStarted</td><td>boolean</td><td>Page manager initialized</td></tr>
+<tr><td>PMPanicMode</td><td>boolean</td><td>True when all cache slots full (thrashing)</td></tr>
+</table>
+
+<h3>Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">PM_Startup</span><span class="func-params">(void)</span> &mdash; Open VSWAP file, allocate page table, set up EMS/XMS/main pools</li>
+<li><span class="func-ret">void</span> <span class="func-name">PM_Shutdown</span><span class="func-params">(void)</span> &mdash; Close file, free all page memory</li>
+<li><span class="func-ret">memptr</span> <span class="func-name">PM_GetPage</span><span class="func-params">(int pagenum)</span> &mdash; Get pointer to a page (load from disk if not cached)</li>
+<li><span class="func-ret">void</span> <span class="func-name">PM_SetPageLock</span><span class="func-params">(int pagenum, PMLockType lock)</span> &mdash; Lock/unlock a page in cache</li>
+<li><span class="func-ret">void</span> <span class="func-name">PM_Preload</span><span class="func-params">(boolean (*update)(unsigned current, unsigned total))</span> &mdash; Preload pages needed for current level</li>
+<li><span class="func-ret">void</span> <span class="func-name">PM_NextFrame</span><span class="func-params">(void)</span> &mdash; Advance frame counter for LRU tracking</li>
+<li><span class="func-ret">void</span> <span class="func-name">PM_Reset</span><span class="func-params">(void)</span> &mdash; Reset page cache (invalidate all pages)</li>
+<li><span class="func-ret">void</span> <span class="func-name">PM_FreePage</span><span class="func-params">(int pagenum)</span> &mdash; Force-evict a page from cache</li>
+<li><span class="func-ret">void</span> <span class="func-name">PM_CheckMainMem</span><span class="func-params">(void)</span> &mdash; Verify main memory page pool</li>
+</ul>
+
+<h3>Internal Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">PML_MapEMS</span><span class="func-params">(word logical, word physical)</span> &mdash; Map EMS logical page to physical frame</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">PML_StartupEMS</span><span class="func-params">(void)</span> &mdash; Detect and allocate EMS pages</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">PML_StartupXMS</span><span class="func-params">(void)</span> &mdash; Detect and allocate XMS block</li>
+<li><span class="func-ret">void</span> <span class="func-name">PML_StartupMainMem</span><span class="func-params">(void)</span> &mdash; Allocate main-memory page pool</li>
+<li><span class="func-ret">int</span> <span class="func-name">PML_GetEMSPage</span><span class="func-params">(int page)</span> &mdash; Get pointer to page in EMS</li>
+<li><span class="func-ret">void</span> <span class="func-name">PML_XMSCopy</span><span class="func-params">(boolean toxms, byte far *addr, longword xmsoff, word len)</span> &mdash; Copy data to/from XMS</li>
+<li><span class="func-ret">void</span> <span class="func-name">PML_LoadPage</span><span class="func-params">(int pagenum)</span> &mdash; Load page from VSWAP file into cache</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>ID_HEADS.H</code> &mdash; Master include</li>
+<li><code>ID_PM.H</code> &mdash; Page manager types and constants</li>
+<li><code>ID_MM.C</code> &mdash; Memory allocation for page buffers</li>
+</ul>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">EMS/XMS code removed entirely. All pages loaded into <code>malloc</code>'d main memory. With modern RAM, the entire VSWAP file (700KB-1.5MB) can be loaded at startup. The paging/LRU logic is preserved for correctness but effectively always has enough cache.</div>
+</div>
+<div class="port-target">
+<div class="port-label csharp">C#</div>
+<div class="port-desc">Read entire VSWAP into a <code>byte[]</code> or <code>MemoryMappedFile</code>. Page table becomes an array of <code>ReadOnlyMemory&lt;byte&gt;</code> slices.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">Load VSWAP via <code>fetch()</code> into an <code>ArrayBuffer</code>. Slice into pages with <code>DataView</code>. All pages available immediately (no demand paging needed).</div>
+</div>
+<div class="port-target">
+<div class="port-label love2d">Love2D</div>
+<div class="port-desc">Load VSWAP with <code>love.filesystem.read()</code>. Store as a Lua string or FFI buffer. Extract pages by offset/length on demand.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

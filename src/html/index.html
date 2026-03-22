@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wolfenstein 3-D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span> <span class="header-badge">Source Spec</span></h1>
+<p class="subtitle">Faithful port of the original 1992 Wolfenstein 3-D source code to multiple modern languages and platforms</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<section>
+<h2>Project Overview</h2>
+<div class="card">
+<p>This project takes the original Wolfenstein 3-D source code (released by id Software in 1995) and ports it faithfully to multiple modern languages and runtimes. The goal is not to rewrite or modernize the game design, but to produce functionally identical ports that preserve the original behavior while replacing DOS-specific hardware access (VGA registers, interrupt handlers, EMS/XMS memory, Sound Blaster I/O) with platform-appropriate equivalents.</p>
+<div style="margin-top: 16px; display: flex; gap: 16px; flex-wrap: wrap;">
+<div class="tag tag-engine">C Original (DOS/VGA)</div>
+<div class="tag" style="background:#1a2030;color:var(--tag-c-sdl3);border:1px solid #2a3050;">C SDL3 Port</div>
+<div class="tag" style="background:#1a2a1a;color:var(--tag-csharp);border:1px solid #2a4a2a;">C# SDL3 Port</div>
+<div class="tag" style="background:#2a2a10;color:var(--tag-typescript);border:1px solid #4a4a2a;">TypeScript Port</div>
+<div class="tag" style="background:#2a1a1a;color:var(--tag-love2d);border:1px solid #4a2a2a;">Love2D / Lua Port</div>
+</div>
+</div>
+</section>
+
+<section>
+<h2>Architecture</h2>
+<div class="card">
+<p>The codebase divides cleanly into two layers:</p>
+<h4>ID Engine Subsystems (ID_*)</h4>
+<p>Reusable engine modules originally developed across Keen, Catacomb, and Wolf3D. These handle low-level hardware: video, input, sound, memory management, caching, and page management. Each has a <code>_Startup</code>/<code>_Shutdown</code> lifecycle.</p>
+<h4>Wolfenstein Game Logic (WL_*)</h4>
+<p>Game-specific code: main loop, gameplay, rendering, AI, menus, intermission screens, and text display. These call into the ID engine layer but contain no direct hardware access.</p>
+</div>
+</section>
+
+<section>
+<h2>Source File Matrix</h2>
+<p style="color:var(--text-secondary);margin-bottom:12px;">Each row is a source module. Columns show port status per target language.</p>
+
+<!-- Engine Subsystems -->
+<div class="file-grid">
+<div class="header-cell">Source File</div>
+<div class="header-cell">C Original</div>
+<div class="header-cell">C SDL3</div>
+<div class="header-cell">C#</div>
+<div class="header-cell">TypeScript</div>
+<div class="header-cell">Love2D</div>
+
+<div class="group-row">ID Engine &mdash; Video</div>
+
+<div class="file-cell"><a href="spec_ID_VL.html">ID_VL.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="file-cell"><a href="spec_ID_VH.html">ID_VH.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="group-row">ID Engine &mdash; Input</div>
+
+<div class="file-cell"><a href="spec_ID_IN.html">ID_IN.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="group-row">ID Engine &mdash; Sound</div>
+
+<div class="file-cell"><a href="spec_ID_SD.html">ID_SD.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="group-row">ID Engine &mdash; Memory &amp; Caching</div>
+
+<div class="file-cell"><a href="spec_ID_MM.html">ID_MM.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="file-cell"><a href="spec_ID_PM.html">ID_PM.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="file-cell"><a href="spec_ID_CA.html">ID_CA.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="group-row">ID Engine &mdash; User System</div>
+
+<div class="file-cell"><a href="spec_ID_US.html">ID_US_1.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="group-row">Game Logic &mdash; Core</div>
+
+<div class="file-cell"><a href="spec_WL_DEF.html">WL_DEF.H</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="file-cell"><a href="spec_WL_MAIN.html">WL_MAIN.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="file-cell"><a href="spec_WL_GAME.html">WL_GAME.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="file-cell"><a href="spec_WL_PLAY.html">WL_PLAY.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="group-row">Game Logic &mdash; Rendering</div>
+
+<div class="file-cell"><a href="spec_WL_DRAW.html">WL_DRAW.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="file-cell"><a href="spec_WL_SCALE.html">WL_SCALE.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="group-row">Game Logic &mdash; Actors &amp; AI</div>
+
+<div class="file-cell"><a href="spec_WL_ACT1.html">WL_ACT1.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="file-cell"><a href="spec_WL_ACT2.html">WL_ACT2.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="file-cell"><a href="spec_WL_AGENT.html">WL_AGENT.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="file-cell"><a href="spec_WL_STATE.html">WL_STATE.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="group-row">Game Logic &mdash; UI &amp; Screens</div>
+
+<div class="file-cell"><a href="spec_WL_MENU.html">WL_MENU.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="file-cell"><a href="spec_WL_INTER.html">WL_INTER.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="file-cell"><a href="spec_WL_TEXT.html">WL_TEXT.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="file-cell"><a href="spec_WL_DEBUG.html">WL_DEBUG.C</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+
+<div class="group-row">Asset &amp; Configuration Headers</div>
+
+<div class="file-cell"><a href="spec_HEADERS.html">Headers</a></div>
+<div class="status-cell"><span class="status-done">Reference</span></div>
+<div class="status-cell"><span class="status-done">Done</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+<div class="status-cell"><span class="status-planned">Planned</span></div>
+</div>
+
+</section>
+
+<section>
+<h2>Key Porting Challenges</h2>
+<div class="card">
+<h4>VGA Planar Graphics</h4>
+<p>The original uses VGA Mode-X with 4 bitplanes. All drawing code writes to specific planes via I/O ports. Modern ports use a linear 320x200 byte framebuffer and convert to RGBA for display.</p>
+
+<h4>Real-Mode Memory Model</h4>
+<p>DOS far pointers, segment:offset addressing, EMS/XMS extended memory. The <code>ID_MM</code> memory manager tracks allocations in 16-byte paragraphs. Modern ports replace this with standard <code>malloc</code>/<code>free</code>.</p>
+
+<h4>Inline Assembly</h4>
+<p>Heavy use of Borland C inline <code>asm</code> blocks and separate .ASM files for performance-critical routines (raycasting, scaling, sound mixing). These must be converted to portable C or the target language.</p>
+
+<h4>Hardware Interrupts</h4>
+<p>Keyboard via INT 9, timer via INT 8, Sound Blaster DMA, AdLib register programming. SDL3 provides event polling and audio callbacks as replacements.</p>
+
+<h4>Fixed-Point Math</h4>
+<p>All game math uses 16.16 fixed-point arithmetic. This carries over naturally to C and C# but needs care in JavaScript/Lua where all numbers are floating-point.</p>
+</div>
+</section>
+
+<section>
+<h2>Directory Structure</h2>
+<div class="card">
+<pre><code>wolf3d-multiport/
+  src/
+    c-original/      -- Original DOS/Borland C source (reference)
+    c-sdl3-port/     -- C port targeting SDL3 (Linux/Win/Mac)
+    csharp-sdl3-port/-- C# port targeting SDL3 bindings
+    typescript-port/ -- TypeScript port (browser/Node)
+    love2d-port/     -- Love2D / Lua port
+    html/            -- This documentation</code></pre>
+</div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation &mdash; Generated 2026-03-22
+</div>
+</footer>
+
+</body>
+</html>

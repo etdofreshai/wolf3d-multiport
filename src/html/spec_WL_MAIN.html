@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WL_MAIN.C - Main Entry Point | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>WL_MAIN.C</span>
+</div>
+
+<h2>WL_MAIN.C &mdash; Main Entry Point <span class="tag tag-game">Game</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> Contains <code>main()</code>, initialization, shutdown, the demo loop (title screen / credits / demo playback cycle), configuration read/write, save/load game serialization, projection table setup, and the <code>Quit()</code> error handler. This is the top-level file that ties everything together.</p>
+<p><strong>Author:</strong> John Carmack</p>
+</div>
+
+<h3>Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">main</span><span class="func-params">(void)</span> &mdash; Entry point: parse args, InitGame, DemoLoop</li>
+<li><span class="func-ret">void</span> <span class="func-name">InitGame</span><span class="func-params">(void)</span> &mdash; Initialize all subsystems in order (MM, PM, CA, VL, VH, IN, SD, US)</li>
+<li><span class="func-ret">void</span> <span class="func-name">ShutdownId</span><span class="func-params">(void)</span> &mdash; Shut down all subsystems in reverse order</li>
+<li><span class="func-ret">void</span> <span class="func-name">DemoLoop</span><span class="func-params">(void)</span> &mdash; Main attract loop: signon, title, credits, auto-demo, repeat</li>
+<li><span class="func-ret">void</span> <span class="func-name">Quit</span><span class="func-params">(char *error)</span> &mdash; Clean shutdown with optional error message</li>
+<li><span class="func-ret">void</span> <span class="func-name">ReadConfig</span><span class="func-params">(void)</span> &mdash; Read CONFIG.WL6: controls, sound settings, view size</li>
+<li><span class="func-ret">void</span> <span class="func-name">WriteConfig</span><span class="func-params">(void)</span> &mdash; Write CONFIG.WL6</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">SaveTheGame</span><span class="func-params">(int file, int x, int y)</span> &mdash; Serialize full game state to file</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">LoadTheGame</span><span class="func-params">(int file, int x, int y)</span> &mdash; Deserialize game state from file</li>
+<li><span class="func-ret">void</span> <span class="func-name">NewGame</span><span class="func-params">(int difficulty, int episode)</span> &mdash; Reset game state for new game</li>
+<li><span class="func-ret">void</span> <span class="func-name">BuildTables</span><span class="func-params">(void)</span> &mdash; Precompute sin/cos/tangent tables</li>
+<li><span class="func-ret">void</span> <span class="func-name">CalcProjection</span><span class="func-params">(long focal)</span> &mdash; Set up projection constants for current view size</li>
+<li><span class="func-ret">void</span> <span class="func-name">SetupWalls</span><span class="func-params">(void)</span> &mdash; Compute wall tile mapping</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">SetViewSize</span><span class="func-params">(unsigned width, unsigned height)</span> &mdash; Change viewport dimensions</li>
+<li><span class="func-ret">void</span> <span class="func-name">NewViewSize</span><span class="func-params">(int width)</span> &mdash; Apply new view size setting</li>
+<li><span class="func-ret">void</span> <span class="func-name">ShowViewSize</span><span class="func-params">(int width)</span> &mdash; Preview view size change</li>
+<li><span class="func-ret">void</span> <span class="func-name">SignonScreen</span><span class="func-params">(void)</span> &mdash; Display the signon (loading) screen</li>
+<li><span class="func-ret">void</span> <span class="func-name">FinishSignon</span><span class="func-params">(void)</span> &mdash; Complete signon display</li>
+<li><span class="func-ret">long</span> <span class="func-name">DoChecksum</span><span class="func-params">(byte far *source, unsigned size, long checksum)</span> &mdash; Compute checksum for save game verification</li>
+<li><span class="func-ret">void</span> <span class="func-name">InitDigiMap</span><span class="func-params">(void)</span> &mdash; Set up digitized sound mapping table</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">MS_CheckParm</span><span class="func-params">(char far *check)</span> &mdash; Check for command-line parameter</li>
+<li><span class="func-ret">void</span> <span class="func-name">Patch386</span><span class="func-params">(void)</span> &mdash; Patch code for 386 optimized routines</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>WL_DEF.H</code> &mdash; All game definitions</li>
+<li>All ID_* modules &mdash; Initialized/shutdown from here</li>
+<li>All WL_* modules &mdash; Called from DemoLoop and GameLoop</li>
+</ul>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc"><code>main()</code> becomes <code>SDL_main()</code>. <code>DemoLoop</code> runs inside a standard event-driven loop. Command-line parsing uses standard argc/argv. Save/load uses <code>fopen</code>/<code>fwrite</code>/<code>fread</code>. The <code>Patch386</code> function becomes a no-op. <code>BuildTables</code> is identical (fixed-point trig).</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">The blocking <code>DemoLoop</code> must be converted to an async state machine or requestAnimationFrame-based loop. Save/load uses localStorage or IndexedDB. Sin/cos tables can use <code>Math.sin</code> or precomputed arrays.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

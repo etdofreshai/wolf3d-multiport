@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ID_IN.C - Input Manager | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>ID_IN.C</span>
+</div>
+
+<h2>ID_IN.C &mdash; Input Manager <span class="tag tag-engine">Engine</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> Handles all input devices: keyboard (via INT 9 ISR), mouse (via INT 33h driver), and joystick (via port 0x201 polling). Provides a unified control abstraction (<code>ControlInfo</code>) and demo recording/playback through serialized control data.</p>
+<p><strong>Author:</strong> Jason Blochowiak, v1.0d1</p>
+</div>
+
+<h3>Key Globals</h3>
+<table class="globals-table">
+<tr><th>Variable</th><th>Type</th><th>Description</th></tr>
+<tr><td>Keyboard[]</td><td>boolean[NumCodes]</td><td>Current state of every key (indexed by scan code)</td></tr>
+<tr><td>LastScan</td><td>ScanCode</td><td>Last key pressed (scan code)</td></tr>
+<tr><td>LastASCII</td><td>char</td><td>Last key pressed (ASCII value)</td></tr>
+<tr><td>MousePresent</td><td>boolean</td><td>Mouse driver detected</td></tr>
+<tr><td>JoysPresent[]</td><td>boolean[MaxJoys]</td><td>Joystick(s) detected</td></tr>
+<tr><td>Controls[]</td><td>ControlType[MaxPlayers]</td><td>Active control type per player</td></tr>
+<tr><td>DemoMode</td><td>Demo</td><td>demo_Off, demo_Record, demo_Playback, demo_PlayDone</td></tr>
+<tr><td>DemoBuffer</td><td>byte *</td><td>Buffer for demo recording/playback data</td></tr>
+<tr><td>DemoOffset, DemoSize</td><td>word</td><td>Current position and size in demo buffer</td></tr>
+</table>
+
+<h3>Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">IN_Startup</span><span class="func-params">(void)</span> &mdash; Initialize input: install keyboard ISR, detect mouse/joysticks</li>
+<li><span class="func-ret">void</span> <span class="func-name">IN_Shutdown</span><span class="func-params">(void)</span> &mdash; Restore original keyboard vector, clean up</li>
+<li><span class="func-ret">void</span> <span class="func-name">IN_Default</span><span class="func-params">(boolean gotit, ControlType in)</span> &mdash; Set default input device</li>
+<li><span class="func-ret">void</span> <span class="func-name">IN_SetKeyHook</span><span class="func-params">(void (*hook)())</span> &mdash; Set callback for key events</li>
+<li><span class="func-ret">void</span> <span class="func-name">IN_ClearKeysDown</span><span class="func-params">(void)</span> &mdash; Clear keyboard state array</li>
+<li><span class="func-ret">void</span> <span class="func-name">IN_ReadControl</span><span class="func-params">(int player, ControlInfo *info)</span> &mdash; Read unified control input (keyboard/mouse/joy/demo)</li>
+<li><span class="func-ret">void</span> <span class="func-name">IN_SetControlType</span><span class="func-params">(int player, ControlType type)</span> &mdash; Set active control type</li>
+<li><span class="func-ret">ScanCode</span> <span class="func-name">IN_WaitForKey</span><span class="func-params">(void)</span> &mdash; Block until a key is pressed</li>
+<li><span class="func-ret">char</span> <span class="func-name">IN_WaitForASCII</span><span class="func-params">(void)</span> &mdash; Block until an ASCII key is pressed</li>
+<li><span class="func-ret">void</span> <span class="func-name">IN_StartAck</span><span class="func-params">(void)</span> &mdash; Begin acknowledgement wait (clear keys, snapshot buttons)</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">IN_CheckAck</span><span class="func-params">(void)</span> &mdash; Check if user has pressed key/button since StartAck</li>
+<li><span class="func-ret">void</span> <span class="func-name">IN_Ack</span><span class="func-params">(void)</span> &mdash; Block until user acknowledges (key or button)</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">IN_UserInput</span><span class="func-params">(longword delay)</span> &mdash; Wait for input or timeout</li>
+<li><span class="func-ret">byte</span> <span class="func-name">IN_MouseButtons</span><span class="func-params">(void)</span> &mdash; Read mouse button state</li>
+<li><span class="func-ret">byte</span> <span class="func-name">IN_JoyButtons</span><span class="func-params">(void)</span> &mdash; Read joystick button state</li>
+<li><span class="func-ret">void</span> <span class="func-name">IN_GetJoyAbs</span><span class="func-params">(word joy, word *xp, word *yp)</span> &mdash; Read absolute joystick position</li>
+<li><span class="func-ret">word</span> <span class="func-name">IN_GetJoyButtonsDB</span><span class="func-params">(word joy)</span> &mdash; Read de-bounced joystick buttons</li>
+<li><span class="func-ret">void</span> <span class="func-name">IN_SetupJoy</span><span class="func-params">(word joy, word minx, word maxx, word miny, word maxy)</span> &mdash; Configure joystick thresholds</li>
+</ul>
+
+<h3>Internal Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void interrupt</span> <span class="func-name">INL_KeyService</span><span class="func-params">(void)</span> &mdash; Keyboard ISR: reads port 0x60, updates Keyboard[], LastScan, LastASCII</li>
+<li><span class="func-ret">void</span> <span class="func-name">INL_GetMouseDelta</span><span class="func-params">(int *x, int *y)</span> &mdash; Read mouse movement delta</li>
+<li><span class="func-ret">word</span> <span class="func-name">INL_GetMouseButtons</span><span class="func-params">(void)</span> &mdash; Read mouse buttons via INT 33h</li>
+<li><span class="func-ret">void</span> <span class="func-name">INL_GetJoyDelta</span><span class="func-params">(word joy, int *dx, int *dy)</span> &mdash; Compute joystick delta from absolute position</li>
+<li><span class="func-ret">void</span> <span class="func-name">INL_StartKbd</span><span class="func-params">(void)</span> &mdash; Install keyboard ISR</li>
+<li><span class="func-ret">void</span> <span class="func-name">INL_ShutKbd</span><span class="func-params">(void)</span> &mdash; Restore original keyboard ISR</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">INL_StartMouse</span><span class="func-params">(void)</span> &mdash; Detect and initialize mouse driver</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">INL_StartJoy</span><span class="func-params">(word joy)</span> &mdash; Detect and auto-configure joystick</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>ID_HEADS.H</code> &mdash; Master include</li>
+<li><code>ID_SD.C</code> &mdash; TimeCount used for timing waits</li>
+<li><code>ID_US_1.C</code> &mdash; US_CheckParm for command-line processing</li>
+</ul>
+
+<h3>Side-by-Side: Keyboard Handling</h3>
+<div class="code-comparison">
+<div class="code-panel">
+<div class="code-label original">C Original (DOS)</div>
+<pre><code>// Hardware interrupt service routine
+static void interrupt INL_KeyService(void)
+{
+    byte k = inportb(0x60);  // Read scan code
+    // Acknowledge to keyboard controller
+    outportb(0x61,
+        (temp = inportb(0x61)) | 0x80);
+    outportb(0x61, temp);
+
+    if (k == 0xe0)
+        special = true;
+    else if (k &amp; 0x80)     // Key release
+        Keyboard[k &amp; 0x7f] = false;
+    else                     // Key press
+    {
+        LastScan = k;
+        Keyboard[k] = true;
+        // ASCII lookup...
+    }
+    outportb(0x20, 0x20);  // EOI to PIC
+}</code></pre>
+</div>
+<div class="code-panel">
+<div class="code-label sdl3">C SDL3 Port</div>
+<pre><code>// Called from IN_PumpEvents() each frame
+// SDL translates OS key events to SDL scancodes
+void IN_HandleKeyEvent(SDL_Event *ev)
+{
+    byte sc = SDL_ScancodeToScancode(
+        ev-&gt;key.scancode);
+
+    if (ev-&gt;type == SDL_EVENT_KEY_DOWN)
+    {
+        LastScan = sc;
+        Keyboard[sc] = true;
+        // ASCII from SDL key sym
+        LastASCII = (char)ev-&gt;key.key;
+    }
+    else // SDL_EVENT_KEY_UP
+    {
+        Keyboard[sc] = false;
+    }
+}
+// Note: SDL_ScancodeToScancode maps SDL scancodes
+// to the DOS scan code values the game expects.</code></pre>
+</div>
+</div>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">Replace INT 9 keyboard ISR with SDL event polling. Map SDL scancodes to DOS scan codes so the Keyboard[] array stays compatible. Mouse via <code>SDL_GetRelativeMouseState</code>. Joystick via SDL gamepad API. The demo record/playback system is unchanged since it operates on the abstract ControlInfo.</div>
+</div>
+<div class="port-target">
+<div class="port-label csharp">C#</div>
+<div class="port-desc">Same approach as C SDL3 using SDL3-CS bindings. The <code>Keyboard[]</code> array becomes a <code>bool[]</code>. Consider using an enum for scan codes instead of raw byte values.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">Use <code>keydown</code>/<code>keyup</code> DOM events. Map <code>KeyboardEvent.code</code> strings to DOS scan code numbers. Mouse via pointer lock API. Joystick via Gamepad API. All blocking waits (IN_WaitForKey, IN_Ack) must become async.</div>
+</div>
+<div class="port-target">
+<div class="port-label love2d">Love2D</div>
+<div class="port-desc">Use <code>love.keypressed</code>/<code>love.keyreleased</code> callbacks. Map Love2D key constants to DOS scan codes. Mouse via <code>love.mouse</code>. Joystick via <code>love.joystick</code>. Blocking waits become coroutine yields.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

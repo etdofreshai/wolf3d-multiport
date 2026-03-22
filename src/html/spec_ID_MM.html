@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ID_MM.C - Memory Manager | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>ID_MM.C</span>
+</div>
+
+<h2>ID_MM.C &mdash; Memory Manager <span class="tag tag-engine">Engine</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> Custom memory manager for the 640KB DOS real-mode environment. Tracks allocations as a linked list of blocks in paragraph-granularity segments. Supports purge levels (allowing cached data to be freed under pressure), locking (preventing relocation), and sorting (defragmentation). Also manages EMS and XMS extended memory.</p>
+<p><strong>Author:</strong> John Carmack</p>
+</div>
+
+<h3>Key Data Structures</h3>
+<pre><code>typedef struct mmblockstruct {
+    unsigned    start, length;      // segment start and length in paragraphs
+    unsigned    attributes;         // LOCKBIT | purge level
+    memptr      *useptr;            // pointer to the segment pointer (for relocation)
+    struct mmblockstruct far *next;
+} mmblocktype;</code></pre>
+
+<h3>Key Globals</h3>
+<table class="globals-table">
+<tr><th>Variable</th><th>Type</th><th>Description</th></tr>
+<tr><td>mminfo</td><td>mminfotype</td><td>Memory statistics (total, used, free counts)</td></tr>
+<tr><td>bufferseg</td><td>memptr</td><td>General purpose buffer segment</td></tr>
+<tr><td>mmerror</td><td>boolean</td><td>Set if allocation fails (non-bomb mode)</td></tr>
+<tr><td>mmblocks[]</td><td>mmblocktype[MAXBLOCKS]</td><td>Static pool of block descriptors</td></tr>
+<tr><td>mmhead, mmfree, mmrover</td><td>mmblocktype far *</td><td>Head of used list, free list, and roving pointer</td></tr>
+</table>
+
+<h3>Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">MM_Startup</span><span class="func-params">(void)</span> &mdash; Initialize memory manager, detect available memory, set up block list</li>
+<li><span class="func-ret">void</span> <span class="func-name">MM_Shutdown</span><span class="func-params">(void)</span> &mdash; Free all memory, shut down EMS/XMS</li>
+<li><span class="func-ret">void</span> <span class="func-name">MM_GetPtr</span><span class="func-params">(memptr *baseptr, unsigned long size)</span> &mdash; Allocate a block (may purge/sort to find space)</li>
+<li><span class="func-ret">void</span> <span class="func-name">MM_FreePtr</span><span class="func-params">(memptr *baseptr)</span> &mdash; Free a previously allocated block</li>
+<li><span class="func-ret">void</span> <span class="func-name">MM_SetPurge</span><span class="func-params">(memptr *baseptr, int purge)</span> &mdash; Set purge level (0=never, 3=purge first)</li>
+<li><span class="func-ret">void</span> <span class="func-name">MM_SetLock</span><span class="func-params">(memptr *baseptr, boolean locked)</span> &mdash; Lock/unlock block (prevent relocation during sort)</li>
+<li><span class="func-ret">void</span> <span class="func-name">MM_SortMem</span><span class="func-params">(void)</span> &mdash; Defragment memory by sorting blocks to low addresses</li>
+<li><span class="func-ret">void</span> <span class="func-name">MM_ShowMemory</span><span class="func-params">(void)</span> &mdash; Debug visualization of memory map</li>
+<li><span class="func-ret">void</span> <span class="func-name">MM_BombOnError</span><span class="func-params">(boolean bomb)</span> &mdash; Set whether allocation failure is fatal</li>
+</ul>
+
+<h3>Internal Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">boolean</span> <span class="func-name">MML_CheckForEMS</span><span class="func-params">(void)</span> &mdash; Detect EMS driver</li>
+<li><span class="func-ret">void</span> <span class="func-name">MML_ShutdownEMS</span><span class="func-params">(void)</span> &mdash; Release EMS pages</li>
+<li><span class="func-ret">boolean</span> <span class="func-name">MML_CheckForXMS</span><span class="func-params">(void)</span> &mdash; Detect XMS driver</li>
+<li><span class="func-ret">void</span> <span class="func-name">MML_ShutdownXMS</span><span class="func-params">(void)</span> &mdash; Release XMS block</li>
+<li><span class="func-ret">void</span> <span class="func-name">MML_UseSpace</span><span class="func-params">(unsigned segstart, unsigned seglength)</span> &mdash; Mark a range as used</li>
+<li><span class="func-ret">void</span> <span class="func-name">MML_ClearBlock</span><span class="func-params">(void)</span> &mdash; Free a purgeable block to get a free descriptor</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>ID_HEADS.H</code> &mdash; Master include</li>
+<li><code>ID_MM.H</code> &mdash; Types (memptr, mminfotype) and constants</li>
+</ul>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">The entire segment-based memory manager is replaced with standard <code>malloc</code>/<code>free</code>. The <code>memptr</code> type becomes a regular pointer. Purge levels are tracked but sorting/defragmentation is not needed. The <code>MM_GetPtr</code>/<code>MM_FreePtr</code> wrappers are kept for API compatibility with the rest of the codebase. EMS/XMS code is removed entirely.</div>
+</div>
+<div class="port-target">
+<div class="port-label csharp">C#</div>
+<div class="port-desc">Use managed <code>byte[]</code> arrays for all allocations. The GC handles fragmentation. <code>MM_GetPtr</code> becomes <code>new byte[size]</code>. Purge levels can be tracked to know when to null out references for GC collection.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc"><code>ArrayBuffer</code> / <code>Uint8Array</code> for allocations. JavaScript GC handles lifetime. The block tracking can be greatly simplified or eliminated.</div>
+</div>
+<div class="port-target">
+<div class="port-label love2d">Love2D</div>
+<div class="port-desc">Lua tables or FFI-allocated memory. The entire manager becomes a thin wrapper that tracks allocated buffers for the cache system's purge logic.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

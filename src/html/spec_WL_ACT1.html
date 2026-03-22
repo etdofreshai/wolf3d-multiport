@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WL_ACT1.C - Actors Part 1 (Doors & Statics) | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>WL_ACT1.C</span>
+</div>
+
+<h2>WL_ACT1.C &mdash; Actors Part 1: Doors &amp; Statics <span class="tag tag-game">Game</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> Handles static objects (decorations, pickups), door mechanics (spawning, opening, closing, state machine), area connectivity for sound propagation, and push-wall movement. Contains the non-enemy actor systems.</p>
+</div>
+
+<h3>Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">InitStaticList</span><span class="func-params">(void)</span> &mdash; Reset static object array</li>
+<li><span class="func-ret">void</span> <span class="func-name">SpawnStatic</span><span class="func-params">(int tilex, int tiley, int type)</span> &mdash; Place a static object (lamp, barrel, food, ammo, etc.)</li>
+<li><span class="func-ret">void</span> <span class="func-name">PlaceItemType</span><span class="func-params">(int itemtype, int tilex, int tiley)</span> &mdash; Place a pickup item (called when enemies drop items)</li>
+<li><span class="func-ret">void</span> <span class="func-name">InitDoorList</span><span class="func-params">(void)</span> &mdash; Reset door array</li>
+<li><span class="func-ret">void</span> <span class="func-name">SpawnDoor</span><span class="func-params">(int tilex, int tiley, boolean vertical, int lock)</span> &mdash; Create a door at map position</li>
+<li><span class="func-ret">void</span> <span class="func-name">OpenDoor</span><span class="func-params">(int door)</span> &mdash; Begin opening a door</li>
+<li><span class="func-ret">void</span> <span class="func-name">CloseDoor</span><span class="func-params">(int door)</span> &mdash; Begin closing a door</li>
+<li><span class="func-ret">void</span> <span class="func-name">OperateDoor</span><span class="func-params">(int door)</span> &mdash; Toggle door (checks keys, starts open/close)</li>
+<li><span class="func-ret">void</span> <span class="func-name">DoorOpen</span><span class="func-params">(int door)</span> &mdash; Door fully open state handler</li>
+<li><span class="func-ret">void</span> <span class="func-name">DoorOpening</span><span class="func-params">(int door)</span> &mdash; Door sliding open animation</li>
+<li><span class="func-ret">void</span> <span class="func-name">DoorClosing</span><span class="func-params">(int door)</span> &mdash; Door sliding closed animation</li>
+<li><span class="func-ret">void</span> <span class="func-name">MoveDoors</span><span class="func-params">(void)</span> &mdash; Update all active doors (called each tic)</li>
+<li><span class="func-ret">void</span> <span class="func-name">PushWall</span><span class="func-params">(int checkx, int checky, int dir)</span> &mdash; Start pushing a secret wall</li>
+<li><span class="func-ret">void</span> <span class="func-name">MovePWalls</span><span class="func-params">(void)</span> &mdash; Update push-wall movement (called each tic)</li>
+<li><span class="func-ret">void</span> <span class="func-name">InitAreas</span><span class="func-params">(void)</span> &mdash; Reset area connectivity</li>
+<li><span class="func-ret">void</span> <span class="func-name">ConnectAreas</span><span class="func-params">(void)</span> &mdash; Rebuild area connectivity graph (for sound propagation through open doors)</li>
+<li><span class="func-ret">void</span> <span class="func-name">RecursiveConnect</span><span class="func-params">(int areanumber)</span> &mdash; Flood-fill area connectivity</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>WL_DEF.H</code> &mdash; Game definitions (doorobj_t, statobj_t)</li>
+<li><code>WL_AGENT.C</code> &mdash; Player key checking for locked doors</li>
+<li><code>ID_SD.C</code> &mdash; Door sound effects</li>
+</ul>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">Pure game logic &mdash; translates directly with no platform-specific changes. Door position uses a 0-0xFFFF range for smooth animation. Push-wall movement is fixed-point tile stepping.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">Direct translation. Door and push-wall state machines are simple switch/case patterns. The area connectivity flood-fill is a standard recursive algorithm.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

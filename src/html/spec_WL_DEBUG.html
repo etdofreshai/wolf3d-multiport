@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WL_DEBUG.C - Debug Tools | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>WL_DEBUG.C</span>
+</div>
+
+<h2>WL_DEBUG.C &mdash; Debug Tools <span class="tag tag-game">Game</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> Development and debugging tools accessed via the backspace+key combination during gameplay. Includes god mode, noclip, warp to level, memory display, object counting, overhead map view, shape/sprite viewer, and various stat displays.</p>
+</div>
+
+<h3>Functions</h3>
+<ul class="func-list">
+<li><span class="func-ret">int</span> <span class="func-name">DebugKeys</span><span class="func-params">(void)</span> &mdash; Main debug key dispatcher (Tab+key combinations)</li>
+<li><span class="func-ret">void</span> <span class="func-name">DebugMemory</span><span class="func-params">(void)</span> &mdash; Display memory usage statistics</li>
+<li><span class="func-ret">void</span> <span class="func-name">CountObjects</span><span class="func-params">(void)</span> &mdash; Count and display active/static objects</li>
+<li><span class="func-ret">void</span> <span class="func-name">PicturePause</span><span class="func-params">(void)</span> &mdash; Freeze frame with picture display</li>
+<li><span class="func-ret">void</span> <span class="func-name">ShapeTest</span><span class="func-params">(void)</span> &mdash; Interactive sprite/shape viewer</li>
+<li><span class="func-ret">void</span> <span class="func-name">ViewMap</span><span class="func-params">(void)</span> &mdash; Overhead map viewer with pan/zoom</li>
+<li><span class="func-ret">void</span> <span class="func-name">OverheadRefresh</span><span class="func-params">(void)</span> &mdash; Render the overhead map view</li>
+</ul>
+
+<h3>Debug Key Bindings</h3>
+<table>
+<tr><th>Key Combo</th><th>Action</th></tr>
+<tr><td>Tab + G</td><td>God mode toggle</td></tr>
+<tr><td>Tab + I</td><td>Give items (full health, ammo, keys, all weapons)</td></tr>
+<tr><td>Tab + N</td><td>No clipping toggle</td></tr>
+<tr><td>Tab + W</td><td>Warp to level</td></tr>
+<tr><td>Tab + O</td><td>Overhead map view</td></tr>
+<tr><td>Tab + S</td><td>Shape viewer</td></tr>
+<tr><td>Tab + M</td><td>Memory usage display</td></tr>
+<tr><td>Tab + C</td><td>Count objects</td></tr>
+<tr><td>Tab + E</td><td>End level (skip to victory)</td></tr>
+<tr><td>Tab + T</td><td>Show tic counts</td></tr>
+</table>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>WL_DEF.H</code> &mdash; Game definitions</li>
+<li><code>WL_PLAY.C</code> &mdash; godmode, noclip flags; tilemap, actorat arrays</li>
+<li><code>ID_VL.C</code> &mdash; Drawing for overhead view</li>
+<li><code>ID_MM.C</code> &mdash; MM_ShowMemory for memory display</li>
+<li><code>ID_IN.C</code> &mdash; Input for debug commands</li>
+</ul>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">Debug functions are mostly display code. The overhead map renderer draws colored blocks to represent tiles &mdash; simple to port. Memory debug display adapts to show malloc usage instead of segment counts. Shape viewer loads pages from PM and draws them.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">Debug tools can be enhanced with browser developer tools integration. The overhead map is a natural fit for a canvas overlay. Memory display shows JS heap stats.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>

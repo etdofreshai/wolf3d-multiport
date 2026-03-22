@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WL_AGENT.C - Player Agent | Wolf3D Multiport</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div class="page-wrapper">
+<div>
+<h1>Wolfenstein 3-D <span>Multiport</span></h1>
+<p class="subtitle">Source Specification</p>
+</div>
+</div>
+</header>
+
+<main class="page-wrapper">
+
+<div class="breadcrumb">
+<a href="index.html">Index</a>
+<span class="sep">/</span>
+<span>WL_AGENT.C</span>
+</div>
+
+<h2>WL_AGENT.C &mdash; Player Agent <span class="tag tag-game">Game</span></h2>
+
+<div class="card">
+<p><strong>Purpose:</strong> All player-specific logic: movement and collision, weapon management, combat (knife/gun attacks, hit detection), status bar HUD drawing (health, ammo, score, keys, face), item pickup, and the player think function (<code>T_Player</code>) that runs each tic.</p>
+</div>
+
+<h3>Functions &mdash; Player Think</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">T_Player</span><span class="func-params">(objtype *ob)</span> &mdash; Main player think: movement, weapon check, use/fire</li>
+<li><span class="func-ret">void</span> <span class="func-name">T_Attack</span><span class="func-params">(objtype *ob)</span> &mdash; Player attack think: animate weapon, fire projectile</li>
+<li><span class="func-ret">void</span> <span class="func-name">ControlMovement</span><span class="func-params">(objtype *ob)</span> &mdash; Convert control input to movement and rotation</li>
+<li><span class="func-ret">void</span> <span class="func-name">CheckWeaponChange</span><span class="func-params">(void)</span> &mdash; Check if player wants to switch weapons (1-4 keys)</li>
+</ul>
+
+<h3>Functions &mdash; Movement &amp; Collision</h3>
+<ul class="func-list">
+<li><span class="func-ret">boolean</span> <span class="func-name">TryMove</span><span class="func-params">(objtype *ob)</span> &mdash; Attempt to move player, checking tile/actor collisions</li>
+<li><span class="func-ret">void</span> <span class="func-name">ClipMove</span><span class="func-params">(objtype *ob, long xmove, long ymove)</span> &mdash; Move with wall sliding (try X, try Y independently)</li>
+<li><span class="func-ret">void</span> <span class="func-name">Thrust</span><span class="func-params">(int angle, long speed)</span> &mdash; Apply thrust in a direction, with ClipMove</li>
+<li><span class="func-ret">void</span> <span class="func-name">VictoryTile</span><span class="func-params">(void)</span> &mdash; Handle stepping on exit tile</li>
+</ul>
+
+<h3>Functions &mdash; Combat</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">Cmd_Fire</span><span class="func-params">(void)</span> &mdash; Begin weapon fire sequence</li>
+<li><span class="func-ret">void</span> <span class="func-name">Cmd_Use</span><span class="func-params">(void)</span> &mdash; Use action (open doors, push walls)</li>
+<li><span class="func-ret">void</span> <span class="func-name">KnifeAttack</span><span class="func-params">(objtype *ob)</span> &mdash; Knife melee attack: check range, deal damage</li>
+<li><span class="func-ret">void</span> <span class="func-name">GunAttack</span><span class="func-params">(objtype *ob)</span> &mdash; Gun hitscan attack: trace ray, check hit, apply damage</li>
+<li><span class="func-ret">void</span> <span class="func-name">VictorySpin</span><span class="func-params">(void)</span> &mdash; Victory spin animation when completing an episode</li>
+</ul>
+
+<h3>Functions &mdash; HUD / Status Bar</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">DrawFace</span><span class="func-params">(void)</span> &mdash; Draw BJ's face in the status bar</li>
+<li><span class="func-ret">void</span> <span class="func-name">UpdateFace</span><span class="func-params">(void)</span> &mdash; Update face expression based on health/damage</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawHealth</span><span class="func-params">(void)</span> &mdash; Draw health number</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawAmmo</span><span class="func-params">(void)</span> &mdash; Draw ammo count</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawScore</span><span class="func-params">(void)</span> &mdash; Draw score</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawLevel</span><span class="func-params">(void)</span> &mdash; Draw level number</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawLives</span><span class="func-params">(void)</span> &mdash; Draw lives count</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawKeys</span><span class="func-params">(void)</span> &mdash; Draw key icons</li>
+<li><span class="func-ret">void</span> <span class="func-name">DrawWeapon</span><span class="func-params">(void)</span> &mdash; Draw weapon icon in status bar</li>
+<li><span class="func-ret">void</span> <span class="func-name">StatusDrawPic</span><span class="func-params">(unsigned x, unsigned y, unsigned picnum)</span> &mdash; Draw a picture in the status bar area</li>
+<li><span class="func-ret">void</span> <span class="func-name">LatchNumber</span><span class="func-params">(int x, int y, int width, long number)</span> &mdash; Draw a number using latch tile digits</li>
+</ul>
+
+<h3>Functions &mdash; Items &amp; Pickups</h3>
+<ul class="func-list">
+<li><span class="func-ret">void</span> <span class="func-name">GetBonus</span><span class="func-params">(statobj_t *check)</span> &mdash; Pick up a bonus item (ammo, health, treasure, keys, weapons)</li>
+<li><span class="func-ret">void</span> <span class="func-name">GiveWeapon</span><span class="func-params">(int weapon)</span> &mdash; Give player a weapon</li>
+<li><span class="func-ret">void</span> <span class="func-name">GiveAmmo</span><span class="func-params">(int ammo)</span> &mdash; Add ammo</li>
+<li><span class="func-ret">void</span> <span class="func-name">GiveKey</span><span class="func-params">(int key)</span> &mdash; Give a key</li>
+<li><span class="func-ret">void</span> <span class="func-name">GiveExtraMan</span><span class="func-params">(void)</span> &mdash; Award extra life</li>
+<li><span class="func-ret">void</span> <span class="func-name">GivePoints</span><span class="func-params">(long points)</span> &mdash; Add score points (may trigger extra life)</li>
+<li><span class="func-ret">void</span> <span class="func-name">TakeDamage</span><span class="func-params">(int points, objtype *attacker)</span> &mdash; Player takes damage</li>
+<li><span class="func-ret">void</span> <span class="func-name">HealSelf</span><span class="func-params">(int points)</span> &mdash; Heal player</li>
+<li><span class="func-ret">void</span> <span class="func-name">SpawnPlayer</span><span class="func-params">(int tilex, int tiley, int dir)</span> &mdash; Initialize player object at map start</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul class="dep-list">
+<li><code>WL_DEF.H</code> &mdash; Game definitions</li>
+<li><code>WL_STATE.C</code> &mdash; CheckLine (line-of-sight for gun attacks)</li>
+<li><code>WL_ACT1.C</code> &mdash; OperateDoor, PushWall (for Use action)</li>
+<li><code>ID_VH.C</code> &mdash; LatchDrawPic for status bar</li>
+<li><code>ID_SD.C</code> &mdash; Weapon/pickup sounds</li>
+</ul>
+
+<h3>Porting Notes</h3>
+<div class="port-notes">
+<div class="port-target">
+<div class="port-label c-sdl3">C SDL3</div>
+<div class="port-desc">Pure game logic. Movement uses fixed-point math (portable). Status bar drawing calls through the VH/VL layer. GunAttack hitscan traces through the tile grid &mdash; straightforward math.</div>
+</div>
+<div class="port-target">
+<div class="port-label typescript">TypeScript</div>
+<div class="port-desc">Fixed-point collision detection needs care to avoid floating-point precision issues. Consider using integer math (<code>|0</code> truncation) for TryMove/ClipMove to match original behavior exactly.</div>
+</div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div class="page-wrapper">
+Wolfenstein 3-D Multiport &mdash; Source Specification Documentation
+</div>
+</footer>
+
+</body>
+</html>
