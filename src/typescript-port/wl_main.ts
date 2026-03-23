@@ -272,6 +272,9 @@ async function InitGame(): Promise<void> {
     // Set VGA plane mode
     VL.VL_SetVGAPlaneMode();
     VL.VL_TestPaletteSet();
+
+    // Load default game palette
+    VH.VH_SetDefaultColors();
 }
 
 //===========================================================================

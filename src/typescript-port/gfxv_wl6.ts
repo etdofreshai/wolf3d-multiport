@@ -89,7 +89,7 @@ export enum graphicnums {
     L_GUY2PIC = 84,
     L_BJWINSPIC = 85,
     STATUSBARPIC = 86,
-    TITLEPIC = 87,
+    TITLEPIC = 96,  // Corrected: actual fullscreen chunk in data files (was 87)
     PG13PIC = 88,
     CREDITSPIC = 89,
     HIGHSCORESPIC = 90,

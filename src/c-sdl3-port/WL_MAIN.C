@@ -1419,7 +1419,7 @@ void    DemoLoop (void)
 
 			UNCACHEGRCHUNK (TITLEPALETTE);
 #else
-			CA_CacheScreen (TITLEPIC);
+			CA_CacheScreen (96);  /* Corrected: actual fullscreen chunk in data files (TITLEPIC enum=87 doesn't match) */
 			VW_UpdateScreen ();
 			VW_FadeIn();
 #endif

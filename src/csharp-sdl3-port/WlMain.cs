@@ -60,6 +60,7 @@ namespace Wolf3D
             IdVl.VL_Startup();
             IdVl.VL_SetVGAPlaneMode();
             IdVl.VL_TestPaletteSet();
+            IdVh.VH_SetDefaultColors();
 
             IdSd.SD_Startup();
             IdIn.IN_Startup();
@@ -277,7 +278,7 @@ namespace Wolf3D
             while (true)
             {
                 // Title page
-                IdCa.CA_CacheScreen((int)graphicnums.TITLEPIC);
+                IdCa.CA_CacheScreen(96);  // Corrected: actual fullscreen chunk in data files (TITLEPIC enum=87 doesn't match)
                 // Load game palette
                 if (WL_Globals.grsegs[GfxConstants.STARTPICS] != null)
                 {
