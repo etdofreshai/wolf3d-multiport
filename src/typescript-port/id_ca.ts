@@ -6,6 +6,7 @@ import { NUMCHUNKS, NUMPICS, STARTPICS, STARTFONT, STARTTILE8, STRUCTPIC } from 
 import { NUMSNDCHUNKS } from './audiowl6';
 import { MAPSIZE } from './wl_def';
 import { mapsegs } from './wl_def';
+import { VL_MemToScreen } from './id_vl';
 
 //===========================================================================
 // Constants
@@ -389,6 +390,10 @@ export function CA_CacheGrChunk(chunk: number): void {
 
 export function CA_CacheScreen(chunk: number): void {
     CA_CacheGrChunk(chunk);
+    // Blit fullscreen image to screen buffer (like original C VGA direct write)
+    if (grsegs[chunk]) {
+        VL_MemToScreen(grsegs[chunk], 320, 200, 0, 0);
+    }
 }
 
 //===========================================================================

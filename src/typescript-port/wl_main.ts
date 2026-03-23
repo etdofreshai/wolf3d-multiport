@@ -308,42 +308,54 @@ export function Quit(error: string | null): void {
 //===========================================================================
 
 async function DemoLoop(): Promise<void> {
-    // For now, start directly into a new game
-    // A full implementation would cycle through:
-    // 1. Signon screen
-    // 2. PG13 screen
-    // 3. Title screen / demo playback
-    // 4. Menu on keypress
+    // PG13 screen
+    await VH.VW_FadeOut();
+    VH.VWB_Bar(0, 0, 320, 200, 0x82);
+    CA.CA_CacheGrChunk(graphicnums.PG13PIC);
+    VH.VWB_DrawPic(216, 110, graphicnums.PG13PIC);
+    VH.VW_UpdateScreen();
+    await VH.VW_FadeIn();
+    await IN.IN_UserInput(SD.TickBase * 7);
+    await VH.VW_FadeOut();
 
-    // Cache and display title screen
-    CA.CA_CacheGrChunk(graphicnums.TITLEPIC);
-    const titleData = CA.grsegs[graphicnums.TITLEPIC];
-    if (titleData) {
-        VL.VL_MemToScreen(titleData, 320, 200, 0, 0);
+    while (true) {
+        // Title page
+        CA.CA_CacheScreen(graphicnums.TITLEPIC);
+        VH.VW_UpdateScreen();
+        await VH.VW_FadeIn();
+        if (await IN.IN_UserInput(SD.TickBase * 15))
+            break;
+        await VH.VW_FadeOut();
+
+        // Credits page
+        CA.CA_CacheScreen(graphicnums.CREDITSPIC);
+        VH.VW_UpdateScreen();
+        await VH.VW_FadeIn();
+        if (await IN.IN_UserInput(SD.TickBase * 10))
+            break;
+        await VH.VW_FadeOut();
+
+        // High scores
+        // TODO: DrawHighScores();
+        VH.VW_UpdateScreen();
+        await VH.VW_FadeIn();
+        if (await IN.IN_UserInput(SD.TickBase * 10))
+            break;
+
+        // TODO: PlayDemo()
+        break;
     }
-    VL.VL_UpdateScreen();
 
-    // Wait for any key
-    IN.IN_ClearKeysDown();
-
-    // Simple game start: wait for key, then start new game
-    while (!IN.LastScan) {
-        await new Promise(resolve => setTimeout(resolve, 16));
-        IN.IN_ProcessEvents();
-    }
+    await VH.VW_FadeOut();
 
     // Resume audio context on first user interaction
     SD.SD_EnsureAudioStarted();
 
-    // Start a new game
+    // Open the menu / start a new game
+    // TODO: US_ControlPanel(0) for menu
     NewGame(0, 0);  // Baby difficulty, episode 1
 
-    // For now, show a simple status screen
-    VL.VL_Bar(0, 0, 320, 200, 0);
-    VL.VL_UpdateScreen();
-
-    // The full game loop would call GameLoop() here
-    // For now, we just display a message
+    // TODO: GameLoop()
     console.log('Game would start here - full game loop not yet implemented');
 }
 

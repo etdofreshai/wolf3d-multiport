@@ -88,11 +88,11 @@ export enum graphicnums {
     L_APOSTROPHEPIC = 83,
     L_GUY2PIC = 84,
     L_BJWINSPIC = 85,
-    STATUSBARPIC = 86,
-    TITLEPIC = 96,  // Corrected: actual fullscreen chunk in data files (was 87)
-    PG13PIC = 88,
-    CREDITSPIC = 89,
-    HIGHSCORESPIC = 90,
+    STATUSBARPIC = 95,  // Corrected: +9 offset from enum to actual data files
+    TITLEPIC = 96,      // Corrected: actual fullscreen chunk in data files (was 87)
+    PG13PIC = 97,       // Corrected: +9 offset (was 88)
+    CREDITSPIC = 98,    // Corrected: +9 offset (was 89)
+    HIGHSCORESPIC = 99, // Corrected: +9 offset (was 90)
     // Lump Start
     KNIFEPIC = 91,
     GUNPIC = 92,
