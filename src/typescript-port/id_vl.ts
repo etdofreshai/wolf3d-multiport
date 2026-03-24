@@ -65,9 +65,21 @@ export function VL_SetScreen(crtc: number, pel: number): void {
 }
 
 export function VL_WaitVBL(vbls: number): Promise<void> {
-    // Approximate at ~70Hz (14ms per frame)
+    // Wait for vbls vertical blanks (~14ms each at 70Hz)
+    // Uses a busy-wait with yield to avoid browser setTimeout throttling
     if (vbls > 0) {
-        return new Promise(resolve => setTimeout(resolve, vbls * 14));
+        const targetMs = vbls * 14;
+        const start = performance.now();
+        return new Promise(resolve => {
+            const check = () => {
+                if (performance.now() - start >= targetMs) {
+                    resolve();
+                } else {
+                    setTimeout(check, 0);
+                }
+            };
+            setTimeout(check, 0);
+        });
     }
     return Promise.resolve();
 }

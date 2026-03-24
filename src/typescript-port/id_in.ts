@@ -660,11 +660,13 @@ export async function IN_Ack(): Promise<void> {
 //===========================================================================
 
 export async function IN_UserInput(delay: number): Promise<boolean> {
+    SD_TimeCountUpdate();
     const lasttime = TimeCount;
     IN_StartAck();
     while (true) {
         if (IN_CheckAck()) return true;
-        await new Promise(resolve => setTimeout(resolve, 1));
+        await new Promise(resolve => setTimeout(resolve, 0));
+        SD_TimeCountUpdate();
         if (TimeCount - lasttime >= delay) break;
     }
     return false;
