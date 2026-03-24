@@ -308,7 +308,7 @@ export function Quit(error: string | null): void {
 //===========================================================================
 
 async function DemoLoop(): Promise<void> {
-    // PG13 screen
+    // PG13 screen (shown once before the main loop)
     await VH.VW_FadeOut();
     VH.VWB_Bar(0, 0, 320, 200, 0x82);
     CA.CA_CacheGrChunk(graphicnums.PG13PIC);
@@ -318,45 +318,53 @@ async function DemoLoop(): Promise<void> {
     await IN.IN_UserInput(SD.TickBase * 7);
     await VH.VW_FadeOut();
 
+    // Main game cycle (matches original C DemoLoop)
     while (true) {
-        // Title page
-        CA.CA_CacheScreen(graphicnums.TITLEPIC);
-        VH.VW_UpdateScreen();
-        await VH.VW_FadeIn();
-        if (await IN.IN_UserInput(SD.TickBase * 15))
+        // Inner loop: cycle title → credits → high scores → demo
+        while (true) {
+            // Title page
+            CA.CA_CacheScreen(graphicnums.TITLEPIC);
+            VH.VW_UpdateScreen();
+            await VH.VW_FadeIn();
+            if (await IN.IN_UserInput(SD.TickBase * 15))
+                break;
+            await VH.VW_FadeOut();
+
+            // Credits page
+            CA.CA_CacheScreen(graphicnums.CREDITSPIC);
+            VH.VW_UpdateScreen();
+            await VH.VW_FadeIn();
+            if (await IN.IN_UserInput(SD.TickBase * 10))
+                break;
+            await VH.VW_FadeOut();
+
+            // High scores
+            // TODO: DrawHighScores();
+            VH.VW_UpdateScreen();
+            await VH.VW_FadeIn();
+            if (await IN.IN_UserInput(SD.TickBase * 10))
+                break;
+
+            // TODO: PlayDemo()
             break;
+        }
+
         await VH.VW_FadeOut();
 
-        // Credits page
-        CA.CA_CacheScreen(graphicnums.CREDITSPIC);
-        VH.VW_UpdateScreen();
-        await VH.VW_FadeIn();
-        if (await IN.IN_UserInput(SD.TickBase * 10))
-            break;
-        await VH.VW_FadeOut();
+        // Resume audio context on first user interaction
+        SD.SD_EnsureAudioStarted();
 
-        // High scores
-        // TODO: DrawHighScores();
-        VH.VW_UpdateScreen();
-        await VH.VW_FadeIn();
-        if (await IN.IN_UserInput(SD.TickBase * 10))
-            break;
+        // Show main menu
+        const { US_ControlPanel } = await import('./wl_menu');
+        await US_ControlPanel(0);
 
-        // TODO: PlayDemo()
-        break;
+        if (startgame || loadedgame) {
+            // TODO: GameLoop();
+            // For now, just show a message and loop back
+            console.log('Game would start here - GameLoop not yet implemented');
+            await VH.VW_FadeOut();
+        }
     }
-
-    await VH.VW_FadeOut();
-
-    // Resume audio context on first user interaction
-    SD.SD_EnsureAudioStarted();
-
-    // Open the menu / start a new game
-    // TODO: US_ControlPanel(0) for menu
-    NewGame(0, 0);  // Baby difficulty, episode 1
-
-    // TODO: GameLoop()
-    console.log('Game would start here - full game loop not yet implemented');
 }
 
 //===========================================================================
