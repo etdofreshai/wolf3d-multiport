@@ -15,6 +15,7 @@ import {
 import { gamestate, viewwidth, viewheight } from './wl_main';
 import {
     player, singlestep, godmode, noclip, extravbls,
+    setGodmode, setNoclip, setSinglestep, setExtravbls,
     statobjlist, laststatobj, doorobjlist, lastdoorobj,
     playstate, setPlaystate, objlist,
 } from './wl_play';
@@ -190,7 +191,7 @@ export function DebugKeys(): number {
             US.US_PrintCentered('God mode ON');
         }
         VH.VW_UpdateScreen();
-        (Play as { godmode: boolean }).godmode = !godmode;
+        setGodmode(!godmode);
         return 1;
     }
 
@@ -227,7 +228,7 @@ export function DebugKeys(): number {
 
     // N = no clip toggle
     if (IN.Keyboard[IN.sc_N]) {
-        (Play as { noclip: boolean }).noclip = !noclip;
+        setNoclip(!noclip);
         US.US_CenterWindow(18, 3);
         if (!noclip) {
             // Value was just toggled above
@@ -254,7 +255,7 @@ export function DebugKeys(): number {
 
     // S = slow motion (single step) toggle
     if (IN.Keyboard[IN.sc_S]) {
-        (Play as { singlestep: boolean }).singlestep = !singlestep;
+        setSinglestep(!singlestep);
         US.US_CenterWindow(18, 3);
         if (!singlestep) {
             US.US_PrintCentered('Slow motion OFF');
@@ -284,8 +285,8 @@ export function DebugKeys(): number {
         US.US_CenterWindow(30, 3);
         US.setPrintY(US.PrintY + 6);
         US.US_Print('  Extra VBLs: ');
-        const newVbls = ((Play as { extravbls: number }).extravbls + 1) % 9;
-        (Play as { extravbls: number }).extravbls = newVbls;
+        const newVbls = (extravbls + 1) % 9;
+        setExtravbls(newVbls);
         US.US_PrintUnsigned(newVbls);
         VH.VW_UpdateScreen();
         return 1;

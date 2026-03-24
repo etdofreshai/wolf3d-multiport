@@ -69,6 +69,10 @@ export let singlestep = false;
 export let godmode = false;
 export let noclip = false;
 export let extravbls = 0;
+export function setGodmode(v: boolean): void { godmode = v; }
+export function setNoclip(v: boolean): void { noclip = v; }
+export function setSinglestep(v: boolean): void { singlestep = v; }
+export function setExtravbls(v: number): void { extravbls = v; }
 
 export let controlx = 0;
 export let controly = 0;
