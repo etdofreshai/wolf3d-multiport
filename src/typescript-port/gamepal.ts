@@ -9,4 +9,4 @@ function decodeBase64(b64: string): Uint8Array {
     return arr;
 }
 
-export const WOLF3D_PALETTE = decodeBase64(GAMEPAL_B64);
+export const WOLF3D_PALETTE = decodeBase64(GAMEPAL_B64).slice(0, 768);
