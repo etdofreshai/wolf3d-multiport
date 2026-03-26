@@ -330,6 +330,21 @@ namespace Wolf3D
                 else if (arg == "--capture")
                 {
                     WL_Globals.capture_enabled = 1;
+                    // Ensure captures directory exists
+                    if (!System.IO.Directory.Exists("captures"))
+                        System.IO.Directory.CreateDirectory("captures");
+                }
+                else if (arg == "--capture-limit" && i + 1 < WL_Globals._argc)
+                {
+                    WL_Globals.capture_limit = int.Parse(WL_Globals._argv[++i]);
+                }
+                else if (arg == "--test-sequence")
+                {
+                    WL_Globals.test_sequence_enabled = 1;
+                }
+                else if (arg == "--nowait")
+                {
+                    WL_Globals.NoWait = true;
                 }
             }
 

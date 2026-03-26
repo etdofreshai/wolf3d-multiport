@@ -427,7 +427,7 @@ function wl_main.InitGame()
     local idx = 0
     for y = 0, wl_def.UPDATEHIGH - 1 do
         for x = 0, wl_def.UPDATEWIDE - 1 do
-            wl_main.blockstarts[idx] = wl_def.SCREENWIDTH * 16 * y + x * wl_def.TILEWIDTH
+            wl_main.blockstarts[idx] = wl_def.SCREENWIDTH * 16 * y + x * id_vl.TILEWIDTH
             idx = idx + 1
         end
     end

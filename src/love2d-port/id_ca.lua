@@ -217,6 +217,7 @@ function id_ca.CAL_CarmackExpand(source, dest_size_words)
 
     while written < dest_size_words do
         local val = source[src_idx]
+        if val == nil then break end  -- source exhausted
         src_idx = src_idx + 1
 
         local hi = rshift(val, 8)
@@ -225,14 +226,14 @@ function id_ca.CAL_CarmackExpand(source, dest_size_words)
         if hi == NEARTAG then
             if lo == 0 then
                 -- Literal: next byte is the actual high byte
-                local next_val = source[src_idx]
+                local next_val = source[src_idx] or 0
                 src_idx = src_idx + 1
                 written = written + 1
                 dest[written] = bor(NEARTAG * 256, band(next_val, 0xFF))
             else
                 -- Near pointer
                 local count = lo
-                local offset_byte = source[src_idx]
+                local offset_byte = source[src_idx] or 0
                 src_idx = src_idx + 1
                 local back_idx = written - band(offset_byte, 0xFF) + 1
                 for i = 1, count do
@@ -244,14 +245,14 @@ function id_ca.CAL_CarmackExpand(source, dest_size_words)
         elseif hi == FARTAG then
             if lo == 0 then
                 -- Literal
-                local next_val = source[src_idx]
+                local next_val = source[src_idx] or 0
                 src_idx = src_idx + 1
                 written = written + 1
                 dest[written] = bor(FARTAG * 256, band(next_val, 0xFF))
             else
                 -- Far pointer
                 local count = lo
-                local far_offset = source[src_idx]
+                local far_offset = source[src_idx] or 0
                 src_idx = src_idx + 1
                 local back_idx = far_offset + 1  -- 1-indexed
                 for i = 1, count do

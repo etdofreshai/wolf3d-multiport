@@ -214,6 +214,10 @@ namespace Wolf3D
             }
 
             IdSd.SD_TimeCountUpdate();
+
+            // Inject test-sequence events during event processing too
+            // (not just during VL_UpdateScreen) so they're picked up by IN_UserInput
+            IdVl.VL_CheckTestSequence();
         }
 
         public static void IN_WaitAndProcessEvents()

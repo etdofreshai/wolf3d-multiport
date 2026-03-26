@@ -16,6 +16,80 @@ namespace Wolf3D
         private static ulong test_start_time;
         private static int test_next_event;
 
+        // Test sequence event definition
+        private struct TestEvent
+        {
+            public ulong time_ms;
+            public int scancode;
+            public bool is_press;
+            public TestEvent(ulong t, int sc, bool press) { time_ms = t; scancode = sc; is_press = press; }
+        }
+
+        // Time-based test events matching the C port
+        private static TestEvent[] test_events = new TestEvent[]
+        {
+            // ~1s: Press SPACE (acknowledge signon "Press a key")
+            new TestEvent( 1000, SDL.SDL_SCANCODE_SPACE, true),
+            new TestEvent( 1200, SDL.SDL_SCANCODE_SPACE, false),
+            // ~4s: Press SPACE (acknowledge PC-13 screen)
+            new TestEvent( 4000, SDL.SDL_SCANCODE_SPACE, true),
+            new TestEvent( 4200, SDL.SDL_SCANCODE_SPACE, false),
+            // ~9s: Press SPACE (dismiss title, should go to menu)
+            new TestEvent( 9000, SDL.SDL_SCANCODE_SPACE, true),
+            new TestEvent( 9200, SDL.SDL_SCANCODE_SPACE, false),
+            // ~13s: Press RETURN (select "New Game" in menu)
+            new TestEvent(13000, SDL.SDL_SCANCODE_RETURN, true),
+            new TestEvent(13200, SDL.SDL_SCANCODE_RETURN, false),
+            // ~16s: Press RETURN (select episode)
+            new TestEvent(16000, SDL.SDL_SCANCODE_RETURN, true),
+            new TestEvent(16200, SDL.SDL_SCANCODE_RETURN, false),
+            // ~19s: Press RETURN (select difficulty)
+            new TestEvent(19000, SDL.SDL_SCANCODE_RETURN, true),
+            new TestEvent(19200, SDL.SDL_SCANCODE_RETURN, false),
+            // Sentinel
+            new TestEvent(0, SDL.SDL_SCANCODE_UNKNOWN, false),
+        };
+
+        public static void VL_CheckTestSequence()
+        {
+            if (WL_Globals.test_sequence_enabled == 0)
+                return;
+
+            if (test_start_time == 0)
+                test_start_time = SDL.SDL_GetTicks();
+
+            ulong now = SDL.SDL_GetTicks();
+            ulong elapsed = now - test_start_time;
+
+            while (test_next_event < test_events.Length &&
+                   (test_events[test_next_event].time_ms > 0 ||
+                    test_events[test_next_event].scancode != SDL.SDL_SCANCODE_UNKNOWN))
+            {
+                if (test_events[test_next_event].time_ms > elapsed)
+                    break;
+
+                SDL.SDL_Event ev = new SDL.SDL_Event();
+                if (test_events[test_next_event].is_press)
+                {
+                    ev.key.type = SDL.SDL_EVENT_KEY_DOWN;
+                    ev.key.scancode = test_events[test_next_event].scancode;
+                    ev.key.key = SDL.SDL_GetKeyFromScancode(test_events[test_next_event].scancode, 0, false);
+                    ev.key.down = 1;
+                    ev.key.repeat_ = 0;
+                }
+                else
+                {
+                    ev.key.type = SDL.SDL_EVENT_KEY_UP;
+                    ev.key.scancode = test_events[test_next_event].scancode;
+                    ev.key.key = SDL.SDL_GetKeyFromScancode(test_events[test_next_event].scancode, 0, false);
+                    ev.key.down = 0;
+                    ev.key.repeat_ = 0;
+                }
+                SDL.SDL_PushEvent(ref ev);
+                test_next_event++;
+            }
+        }
+
         public static int VL_VideoID()
         {
             return 5;   // Always report VGA present
@@ -350,7 +424,7 @@ namespace Wolf3D
                     {
                         int px = x * 4 + plane;
                         int idx = linearbase + y * width + px;
-                        if (px < width && idx < WL_Globals.LATCH_MEM_SIZE)
+                        if (px < width && idx >= 0 && idx < WL_Globals.LATCH_MEM_SIZE && si >= 0 && si < source.Length)
                             WL_Globals.latchmem[idx] = source[si];
                         si++;
                     }
@@ -595,7 +669,48 @@ namespace Wolf3D
             SDL.SDL_RenderTexture(WL_Globals.sdl_renderer, WL_Globals.sdl_texture, IntPtr.Zero, IntPtr.Zero);
             SDL.SDL_RenderPresent(WL_Globals.sdl_renderer);
 
+            // Frame capture: save current frame as BMP if enabled
+            if (WL_Globals.capture_enabled == 1)
+            {
+                IntPtr surf = SDL.SDL_CreateSurface(320, 200, SDL.SDL_PIXELFORMAT_XRGB8888);
+                if (surf != IntPtr.Zero)
+                {
+                    // Read the SDL_Surface struct to get pixels pointer and pitch
+                    SDL.SDL_Surface surfStruct = Marshal.PtrToStructure<SDL.SDL_Surface>(surf);
+
+                    SDL.SDL_LockSurface(surf);
+                    for (int sy = 0; sy < 200; sy++)
+                    {
+                        uint* dst = (uint*)((byte*)surfStruct.pixels + sy * surfStruct.pitch);
+                        for (int sx = 0; sx < 320; sx++)
+                        {
+                            byte idx2 = WL_Globals.sdl_screenbuf[sy * 320 + sx];
+                            byte cr = (byte)(WL_Globals.sdl_palette[idx2 * 3 + 0] * 255 / 63);
+                            byte cg = (byte)(WL_Globals.sdl_palette[idx2 * 3 + 1] * 255 / 63);
+                            byte cb = (byte)(WL_Globals.sdl_palette[idx2 * 3 + 2] * 255 / 63);
+                            dst[sx] = ((uint)cr << 16) | ((uint)cg << 8) | (uint)cb;
+                        }
+                    }
+                    SDL.SDL_UnlockSurface(surf);
+
+                    string path = string.Format("captures/frame_{0:D5}.bmp", WL_Globals.capture_frame);
+                    SDL.SDL_SaveBMP(surf, path);
+                    SDL.SDL_DestroySurface(surf);
+
+                    if (WL_Globals.capture_limit > 0 && (WL_Globals.capture_frame + 1) >= WL_Globals.capture_limit)
+                    {
+                        WL_Globals.capture_frame++;
+                        VL_Shutdown();
+                        Environment.Exit(0);
+                    }
+                }
+            }
+
+            // Always increment frame counter
             WL_Globals.capture_frame++;
+
+            // Inject test sequence key events (time-based)
+            VL_CheckTestSequence();
 
             // Auto-quit timer
             if (WL_Globals.quit_after_ms > 0)

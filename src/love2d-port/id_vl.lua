@@ -47,8 +47,10 @@ id_vl.imageData = nil   -- love.image.newImageData(320, 200)
 id_vl.image     = nil   -- love.graphics.newImage from imageData
 id_vl.canvas    = nil   -- optional render target
 
--- Frame counter
+-- Frame counter and capture state
 id_vl.capture_frame = 0
+id_vl.capture_enabled = false
+id_vl.capture_limit = 0  -- 0 = unlimited
 
 ---------------------------------------------------------------------------
 -- Init / Shutdown
@@ -561,7 +563,8 @@ function id_vl.VL_UpdateScreen()
     local buf = id_vl.screenbuf
 
     -- Use FFI pointer for speed if available
-    local ptr = imgData:getFFIPointer()
+    local raw_ptr = imgData:getFFIPointer()
+    local ptr = raw_ptr and ffi.cast("uint8_t*", raw_ptr) or nil
     if ptr then
         for y = 0, 199 do
             for x = 0, 319 do
@@ -592,6 +595,20 @@ function id_vl.VL_UpdateScreen()
 
     -- Refresh the GPU texture from the ImageData
     id_vl.image:replacePixels(imgData)
+
+    -- Frame capture: save current frame as PNG if enabled
+    if id_vl.capture_enabled then
+        local filename = string.format("frame_%05d.png", id_vl.capture_frame)
+        local fileData = imgData:encode("png")
+        -- Write to the save directory (love.filesystem.getSaveDirectory())
+        love.filesystem.write(filename, fileData)
+
+        if id_vl.capture_limit > 0 and (id_vl.capture_frame + 1) >= id_vl.capture_limit then
+            id_vl.capture_frame = id_vl.capture_frame + 1
+            love.event.quit(0)
+            return
+        end
+    end
 
     id_vl.capture_frame = id_vl.capture_frame + 1
 end
