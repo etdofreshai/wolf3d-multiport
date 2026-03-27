@@ -338,7 +338,7 @@ namespace Wolf3D
 
         public static void VL_FadeIn()
         {
-            VL_FadeIn(0, 255, WL_Globals.sdl_palette, 30);
+            VL_FadeIn(0, 255, IdVh.gamepal, 30);
         }
 
         public static void VL_TestPaletteSet()

@@ -54,12 +54,9 @@ namespace Wolf3D
             // Start subsystems
             IdMm.MM_Startup();
 
-            // Check for game data files
+            // SignonScreen initializes VGA mode, sets the palette, matching the C port.
+            // VL_Startup/VL_SetVGAPlaneMode/VL_TestPaletteSet are called inside SignonScreen.
             SignonScreen();
-
-            IdVl.VL_Startup();
-            IdVl.VL_SetVGAPlaneMode();
-            IdVl.VL_TestPaletteSet();
 
             IdSd.SD_Startup();
             IdIn.IN_Startup();
@@ -105,8 +102,13 @@ namespace Wolf3D
 
         private static void SignonScreen()
         {
-            // In the original, this displays the startup signon bitmap
-            // For SDL3, we just clear the screen
+            // Match the C port: SignonScreen initializes VGA mode and sets the palette.
+            // In the C port, SignonScreen calls VL_SetVGAPlaneMode() (which triggers
+            // VL_Startup internally), then VL_TestPaletteSet(), then VL_SetPalette(&gamepal).
+            // The subsequent VL_Startup() call in InitGame returns early (idempotent guard).
+            IdVl.VL_SetVGAPlaneMode();
+            IdVl.VL_TestPaletteSet();
+            IdVl.VL_SetPalette(IdVh.gamepal);
         }
 
         // =========================================================================
@@ -278,14 +280,8 @@ namespace Wolf3D
             {
                 // Title page
                 IdCa.CA_CacheScreen((int)graphicnums.TITLEPIC);
-                // Load game palette
-                if (WL_Globals.grsegs[GfxConstants.STARTPICS] != null)
-                {
-                    // gamepal would be loaded from the palette chunk
-                }
-
                 IdVl.VL_UpdateScreen();
-                IdVl.VL_FadeIn(0, 255, WL_Globals.sdl_palette, 30);
+                IdVl.VL_FadeIn(0, 255, IdVh.gamepal, 30);
 
                 if (IdIn.IN_UserInput(WolfConstants.TickBase * 15))
                 {
