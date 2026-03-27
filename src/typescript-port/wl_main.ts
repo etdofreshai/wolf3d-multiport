@@ -312,6 +312,9 @@ async function DemoLoop(): Promise<void> {
     // 3. Title screen / demo playback
     // 4. Menu on keypress
 
+    // Set the game palette so screens are visible
+    VL.VL_SetPalette(VH.gamepal);
+
     // Cache and display title screen
     CA.CA_CacheGrChunk(graphicnums.TITLEPIC);
     const titleData = CA.grsegs[graphicnums.TITLEPIC];
