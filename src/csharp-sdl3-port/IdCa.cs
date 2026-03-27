@@ -442,8 +442,9 @@ namespace Wolf3D
             if (WL_Globals.grsegs[chunk] != null)
             {
                 byte[] data = WL_Globals.grsegs[chunk];
-                // Screen-sized chunk, de-plane and draw
-                IdVl.VL_MungePic(data, 320, 200);
+                // Decompressed data is already in plane-separated format (the art
+                // tools pre-munged it for direct VGA mode-X writes). VL_MemToScreen
+                // expects plane-separated data, so pass it directly -- no VL_MungePic.
                 IdVl.VL_MemToScreen(data, 320, 200, 0, 0);
             }
         }
