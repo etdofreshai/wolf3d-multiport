@@ -9,4 +9,5 @@ function decodeBase64(b64: string): Uint8Array {
     return arr;
 }
 
-export const WOLF3D_PALETTE = decodeBase64(GAMEPAL_B64).slice(0, 768);
+// First 3 bytes are a file header (length/version prefix), actual palette starts at byte 3
+export const WOLF3D_PALETTE = decodeBase64(GAMEPAL_B64).slice(3, 3 + 768);
