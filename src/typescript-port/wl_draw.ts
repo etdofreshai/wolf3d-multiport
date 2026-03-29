@@ -684,14 +684,21 @@ function AsmRefresh(): void {
         // Trace along this angle until we hit a wall
         let hitWall = false;
         let maxIter = 256;
+        const doRayDebug = doDebug && (pixx === 0 || pixx === 120);
+        let rayIter = 0;
 
         while (!hitWall && maxIter-- > 0) {
+            rayIter++;
             // Determine which intercept is closer
             let do_vert: boolean;
             if (ytilestep === -1) {
                 do_vert = yint_hi > yt;
             } else {
                 do_vert = yint_hi < yt;
+            }
+
+            if (doRayDebug && rayIter <= 5) {
+                console.log(`[Ray px=${pixx} it=${rayIter}] xt=${xt} yt=${yt} yint_hi=${yint_hi} xint_hi=${xint_hi} do_vert=${do_vert} ytilestep=${ytilestep}`);
             }
 
             if (do_vert) {
