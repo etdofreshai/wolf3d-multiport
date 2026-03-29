@@ -160,12 +160,6 @@ export function SetViewSize(width: number, height: number): boolean {
 
     CalcProjection(FOCALLENGTH);
 
-    // Initialize sprite scaling tables for this viewport size
-    // Use dynamic import to avoid circular dependency with wl_scale
-    import('./wl_scale').then(mod => {
-        if (mod.SetupScaling) mod.SetupScaling(viewheight + 1);
-    });
-
     return true;
 }
 
@@ -279,6 +273,10 @@ async function InitGame(): Promise<void> {
 
     // Set up the view
     NewViewSize(viewsize);
+
+    // Initialize sprite scaling (after viewheight is set)
+    const { SetupScaling } = await import('./wl_scale');
+    SetupScaling(viewheight + 1);
 
     // Set VGA plane mode
     VL.VL_SetVGAPlaneMode();
