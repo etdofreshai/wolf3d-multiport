@@ -298,15 +298,12 @@ export function FarScalePost(): void {
 //===========================================================================
 
 let _firstHitLogged = false;
+const _texSamples: [number, number][] = []; // [pixx, texture]
 function HitVertWall(): void {
     let wallpic: number;
     let texture = (yintercept >> 4) & 0xfc0;
-    if (!_firstHitLogged && pixx >= viewwidth / 2 - 1 && pixx <= viewwidth / 2 + 1) {
-        _firstHitLogged = true;
-        const sample = [];
-        // Log texture values for a range of columns around center
-        // We can't see other columns from here, but log what we have
-        console.log(`[HitVertWall] FIRST HIT pixx=${pixx} tile=${tilehit} tex=${texture} ht=${wallheight[pixx]} yint=${yintercept} xstep=${xstep}`);
+    if (!_firstHitLogged) {
+        _texSamples.push([pixx, texture]);
     }
 
     if (xtilestep === -1) {
@@ -363,6 +360,9 @@ function HitVertWall(): void {
 function HitHorizWall(): void {
     let wallpic: number;
     let texture = (xintercept >> 4) & 0xfc0;
+    if (!_firstHitLogged) {
+        _texSamples.push([pixx, texture + 10000]); // +10000 = horiz marker
+    }
 
     if (ytilestep === -1) {
         yintercept += TILEGLOBAL;
@@ -1066,16 +1066,14 @@ function WallRefresh(): void {
 
     lastside = -1;
     _texDebug.length = 0;
+    _texSamples.length = 0;
     AsmRefresh();
     ScalePost();  // flush last post
-    if (_asmDebugCount < 3 && _texDebug.length > 0) {
-        _asmDebugCount++;
-        // Show texture value distribution
-        const unique = [...new Set(_texDebug)];
-        const sampled = _texDebug.filter((_, i) => i % 20 === 0);
-        console.log(`[WallRefresh] ${_texDebug.length} columns, ${unique.length} unique textures, sampled every 20: [${sampled.join(',')}]`);
-    } else if (_asmDebugCount < 3) {
-        // no walls this frame, don't count it
+    if (!_firstHitLogged && _texSamples.length > 0) {
+        _firstHitLogged = true;
+        const unique = [...new Set(_texSamples.map(s => s[1]))];
+        const sampled = _texSamples.filter((_, i) => i % 40 === 0).map(s => `${s[0]}:${s[1]}`);
+        console.log(`[WallRefresh] ${_texSamples.length} hits, ${unique.length} unique tex. Sampled: ${sampled.join(' ')}`);
     }
 }
 
