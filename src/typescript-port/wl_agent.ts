@@ -13,7 +13,7 @@ import {
     weapontype, classtype, dirtype, activetype, exit_t,
     tilemap, actorat, tics, mapsegs, farmapylookup,
 } from './wl_def';
-import { gamestate, sintable, costable, viewwidth, viewheight, shootdelta } from './wl_main';
+import { gamestate, sintable, costable, viewwidth, viewheight } from './wl_main';
 import {
     player, controlx, controly, buttonstate,
     statobjlist, godmode, noclip,
@@ -287,7 +287,119 @@ function T_Player(ob: objtype): void {
 }
 
 //===========================================================================
-// T_Attack - weapon attack animation
+// GunAttack - hit-scan for bullet weapons (pistol, machine gun, chaingun)
+//===========================================================================
+
+function GunAttack(): void {
+    if (!player) return;
+
+    const px = player.x;
+    const py = player.y;
+    const angle = player.angle;
+
+    // Step through tiles along the shot direction
+    let viewdist = 0x7fffffff;
+
+    // Check all actors for hit
+    let closest: objtype | null = null;
+    let closestDist = 0x7fffffff;
+
+    for (let check = player.next; check; check = check.next) {
+        if (!(check.flags & FL_SHOOTABLE)) continue;
+        if (check.active === activetype.ac_no) continue;
+
+        const dx = check.x - px;
+        const dy = check.y - py;
+
+        // Transform to player's view space
+        const sinAngle = sintable[angle];
+        const cosAngle = costable[angle];
+
+        // Distance along view direction
+        const dist = ((dx >> 16) * (cosAngle >> 16) - (dy >> 16) * (sinAngle >> 16)) << 16;
+        // Lateral offset
+        const lateral = ((dx >> 16) * (sinAngle >> 16) + (dy >> 16) * (cosAngle >> 16)) << 16;
+
+        if (dist <= 0) continue;
+
+        // Check if enemy is within the shot cone (±~1.5 degrees for single shot)
+        const shotspread = dist >> 5; // roughly ±3% of distance
+        if (lateral < -shotspread || lateral > shotspread) continue;
+
+        // Check for wall occlusion (simplified: check tiles between player and enemy)
+        let blocked = false;
+        const steps = Math.max(Math.abs(check.tilex - player.tilex), Math.abs(check.tiley - player.tiley));
+        for (let i = 1; i < steps && !blocked; i++) {
+            const tx = player.tilex + ((check.tilex - player.tilex) * i / steps) | 0;
+            const ty = player.tiley + ((check.tiley - player.tiley) * i / steps) | 0;
+            if (tx >= 0 && tx < MAPSIZE && ty >= 0 && ty < MAPSIZE) {
+                const tile = tilemap[tx][ty];
+                if (tile && !(tile & 0x80)) blocked = true; // solid wall blocks shot
+            }
+        }
+        if (blocked) continue;
+
+        if (dist < closestDist) {
+            closestDist = dist;
+            closest = check;
+        }
+    }
+
+    if (closest) {
+        const dist = Math.max(Math.abs(closest.tilex - player.tilex), Math.abs(closest.tiley - player.tiley));
+        const hitchance = 256 - dist * 16;
+        if (hitchance > 0 && (US.US_RndT() & 0xFF) < hitchance) {
+            // Hit!
+            const damage = (US.US_RndT() % 10) + 1;
+            SD.SD_PlaySound(soundnames.HITENEMYSND);
+            import('./wl_state').then(WlState => WlState.DamageActor(closest!, damage));
+        } else {
+            SD.SD_PlaySound(soundnames.ATKPISTOLSND);
+        }
+    } else {
+        SD.SD_PlaySound(soundnames.ATKPISTOLSND);
+    }
+}
+
+//===========================================================================
+// KnifeAttack - melee attack with knife
+//===========================================================================
+
+function KnifeAttack(): void {
+    if (!player) return;
+
+    const px = player.x;
+    const py = player.y;
+
+    // Check all actors within melee range (~1.5 tiles)
+    let closest: objtype | null = null;
+    let closestDist = 0x7fffffff;
+
+    for (let check = player.next; check; check = check.next) {
+        if (!(check.flags & FL_SHOOTABLE)) continue;
+        if (check.active === activetype.ac_no) continue;
+
+        const dx = check.x - px;
+        const dy = check.y - py;
+        const dist = dx * dx + dy * dy;
+
+        if (dist < closestDist && dist < (TILEGLOBAL * 2) * (TILEGLOBAL * 2)) {
+            closestDist = dist;
+            closest = check;
+        }
+    }
+
+    if (closest) {
+        const damage = (US.US_RndT() % 10) + 1;
+        SD.SD_PlaySound(soundnames.HITENEMYSND);
+        import('./wl_state').then(WlState => WlState.DamageActor(closest!, damage));
+    } else {
+        SD.SD_PlaySound(soundnames.ATKKNIFESND);
+    }
+}
+
+//===========================================================================
+// T_Attack - weapon attack animation with firing logic
 //===========================================================================
 
 function T_Attack(ob: objtype): void {
@@ -297,8 +409,10 @@ function T_Attack(ob: objtype): void {
 
     gamestate.attackcount -= tics;
     while (gamestate.attackcount <= 0) {
+        const frameAttack = attackinfo[gamestate.weapon][gamestate.attackframe].attack;
+
         gamestate.attackframe++;
-        if (gamestate.attackframe >= 4) {
+        if (gamestate.attackframe >= 4 || frameAttack === -1) {
             // Attack finished
             gamestate.attackframe = 0;
             gamestate.weaponframe = 0;
@@ -307,6 +421,53 @@ function T_Attack(ob: objtype): void {
         }
         gamestate.attackcount += attackinfo[gamestate.weapon][gamestate.attackframe].tics;
         gamestate.weaponframe = attackinfo[gamestate.weapon][gamestate.attackframe].frame;
+
+        // Process the attack action for the frame we just left
+        if (frameAttack > 0) {
+            switch (gamestate.weapon) {
+                case weapontype.wp_knife:
+                    KnifeAttack();
+                    break;
+                case weapontype.wp_pistol:
+                    if (gamestate.ammo > 0) {
+                        gamestate.ammo--;
+                        DrawAmmo();
+                        GunAttack();
+                    }
+                    break;
+                case weapontype.wp_machinegun:
+                    if (gamestate.ammo > 0) {
+                        gamestate.ammo--;
+                        DrawAmmo();
+                        GunAttack();
+                        // Machine gun fires extra shots on attack=3
+                        if (frameAttack >= 3 && gamestate.ammo > 0) {
+                            gamestate.ammo--;
+                            DrawAmmo();
+                            GunAttack();
+                        }
+                    }
+                    break;
+                case weapontype.wp_chaingun:
+                    if (gamestate.ammo > 0) {
+                        gamestate.ammo--;
+                        DrawAmmo();
+                        GunAttack();
+                        // Chaingun fires extra shots on attack=3,4
+                        if (frameAttack >= 3 && gamestate.ammo > 0) {
+                            gamestate.ammo--;
+                            DrawAmmo();
+                            GunAttack();
+                        }
+                        if (frameAttack >= 4 && gamestate.ammo > 0) {
+                            gamestate.ammo--;
+                            DrawAmmo();
+                            GunAttack();
+                        }
+                    }
+                    break;
+            }
+        }
     }
 }
 

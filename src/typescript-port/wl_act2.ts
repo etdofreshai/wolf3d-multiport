@@ -7,6 +7,7 @@ import {
     TILEGLOBAL, TILESHIFT,
     SpriteEnum,
     SPDPATROL, SPDDOG,
+    tics,
 } from './wl_def';
 import { gamestate } from './wl_main';
 import { player, GetNewActor, madenoise } from './wl_play';
@@ -17,6 +18,7 @@ import {
 import * as SD from './id_sd';
 import * as US from './id_us_1';
 import { soundnames } from './audiowl1';
+import { TakeDamage } from './wl_agent';
 
 //===========================================================================
 // Think/Action functions
@@ -28,43 +30,103 @@ function T_Stand(ob: objtype): void {
 
 function T_Path(ob: objtype): void {
     if (SightPlayer(ob)) return;
-    // Continue patrolling - handled by distance/direction
+
+    // Continue patrolling - move along current direction
+    if (ob.distance < 0) {
+        // Waiting at door
+        return;
+    }
+
+    if (ob.distance > 0 && ob.speed > 0) {
+        const move = Math.min(ob.speed * (typeof tics !== 'undefined' ? tics : 1), ob.distance);
+        MoveObj(ob, move);
+    } else if (ob.distance <= 0) {
+        // Reached destination - pick a new direction or stop
+        ob.distance = 0;
+    }
 }
 
+// Attack range constants
+const CLOSE_RANGE = 2;    // tiles for melee/dog attacks
+const SHOOT_RANGE = 12;   // tiles for shooting attacks
+
 function T_Chase(ob: objtype): void {
-    // If can see player and in range, attack
+    if (!player) return;
+
+    // Check if we can see the player
     if (CheckSight(ob)) {
-        // Attack logic varies by enemy type
+        const dx = Math.abs(ob.tilex - player.tilex);
+        const dy = Math.abs(ob.tiley - player.tiley);
+        const dist = Math.max(dx, dy);
+
+        // Close enough to shoot?
+        if (dist < SHOOT_RANGE) {
+            // Transition to shoot state based on enemy type
+            switch (ob.obclass) {
+                case classtype.guardobj:
+                    SD.SD_PlaySound(soundnames.ATKPISTOLSND);
+                    NewState(ob, s_grdshoot1);
+                    return;
+                case classtype.officerobj:
+                    SD.SD_PlaySound(soundnames.ATKPISTOLSND);
+                    NewState(ob, s_grdshoot1); // reuse guard shoot sprites for now
+                    return;
+                case classtype.ssobj:
+                    SD.SD_PlaySound(soundnames.ATKMACHINEGUNSND);
+                    NewState(ob, s_grdshoot1);
+                    return;
+                case classtype.mutantobj:
+                    SD.SD_PlaySound(soundnames.ATKPISTOLSND);
+                    NewState(ob, s_grdshoot1);
+                    return;
+                default:
+                    break;
+            }
+        }
     }
+
     SelectDodgeDir(ob);
 }
 
 function T_DogChase(ob: objtype): void {
+    if (!player) return;
+
     if (CheckSight(ob)) {
-        // Lunge at player
+        const dx = Math.abs(ob.tilex - player.tilex);
+        const dy = Math.abs(ob.tiley - player.tiley);
+        const dist = Math.max(dx, dy);
+
+        // Dogs lunge at close range
+        if (dist <= CLOSE_RANGE) {
+            NewState(ob, s_dogjump1);
+            return;
+        }
     }
+
     SelectDodgeDir(ob);
 }
 
 function T_Shoot(ob: objtype): void {
-    // Fire at player
+    // Enemy fires at player
     if (!player) return;
 
     const dx = Math.abs(ob.tilex - player.tilex);
     const dy = Math.abs(ob.tiley - player.tiley);
     const dist = Math.max(dx, dy);
 
+    const hitchance = US.US_RndT() & 0xFF;
     let damage = 0;
-    const hitchance = US.US_RndT();
 
     if (dist < 2) damage = hitchance >> 2;
     else if (dist < 4) damage = hitchance >> 3;
-    else damage = hitchance >> 4;
+    else if (dist < 8) damage = hitchance >> 4;
+    else damage = hitchance >> 5;
 
     if (damage > 0) {
-        // Import here would be circular - we call through the global
-        // TakeDamage is in wl_agent.ts
+        TakeDamage(damage, ob);
     }
+
+    SD.SD_PlaySound(soundnames.ATKPISTOLSND);
 }
 
 function T_Bite(ob: objtype): void {
@@ -73,10 +135,8 @@ function T_Bite(ob: objtype): void {
     const dx = Math.abs(ob.tilex - player.tilex);
     const dy = Math.abs(ob.tiley - player.tiley);
     if (dx <= 1 && dy <= 1) {
-        const damage = (US.US_RndT() >> 4);
-        if (damage > 0) {
-            SD.SD_PlaySound(soundnames.TAKEDAMAGESND);
-        }
+        const damage = (US.US_RndT() >> 4) + 1;
+        TakeDamage(damage, ob);
     }
 }
 
