@@ -297,7 +297,6 @@ export function FarScalePost(): void {
 // HitVertWall
 //===========================================================================
 
-let _hitDebugCount = 0;
 function HitVertWall(): void {
     let wallpic: number;
     let texture = (yintercept >> 4) & 0xfc0;
@@ -307,11 +306,6 @@ function HitVertWall(): void {
         xintercept += TILEGLOBAL;
     }
     wallheight[pixx] = CalcHeight();
-    if (_hitDebugCount < 5) {
-        _hitDebugCount++;
-        console.log('[HitVertWall] pixx=', pixx, 'tilehit=', tilehit, 'xtile=', xtile,
-            'height=', wallheight[pixx], 'texture=', texture);
-    }
 
     if (lastside === 1 && lastintercept === xtile && lasttilehit === tilehit) {
         if (texture === posttexture) {
@@ -598,7 +592,7 @@ function ypartialbyxstep(ypartial: number): number {
 
 let _asmDebugCount = 0;
 function AsmRefresh(): void {
-    const doDebug = _asmDebugCount < 1;
+    const doDebug = _asmDebugCount < 0; // disabled
     _asmDebugCount++;
     // Flat tilemap access helper
     const tilemapFlat = (tx: number, ty: number): number => {

@@ -81,7 +81,7 @@ export const buttonscan: number[] = new Array(NUMBUTTONS).fill(IN.sc_None);
 export const buttonmouse: number[] = [IN.sc_None, IN.sc_None, IN.sc_None, IN.sc_None];
 export const buttonjoy: number[] = [IN.sc_None, IN.sc_None, IN.sc_None, IN.sc_None];
 
-export let viewsize = 15;
+export let viewsize = 20;
 
 // Screen locations for triple buffering
 export const screenloc: number[] = [0, SCREENSIZE, SCREENSIZE * 2];
@@ -201,7 +201,7 @@ function ReadConfig(): void {
         const data = localStorage.getItem('wolf3d_config');
         if (data) {
             const config = JSON.parse(data);
-            viewsize = config.viewsize || 15;
+            viewsize = config.viewsize || 20;
             mouseadjustment = config.mouseadjustment || 5;
         }
     } catch {
@@ -213,7 +213,7 @@ function ReadConfig(): void {
     SD.SD_SetMusicMode(SMMode.smm_AdLib);
     SD.SD_SetDigiDevice(SDSMode.sds_SoundBlaster);
 
-    viewsize = 15;
+    viewsize = 20;
     mouseadjustment = 5;
     mouseenabled = true;
 
