@@ -276,7 +276,7 @@ async function InitGame(): Promise<void> {
 
     // Initialize sprite scaling (after viewheight is set)
     const { SetupScaling } = await import('./wl_scale');
-    SetupScaling(viewheight + 1);
+    SetupScaling(MAXSCALEHEIGHT);
 
     // Set VGA plane mode
     VL.VL_SetVGAPlaneMode();
