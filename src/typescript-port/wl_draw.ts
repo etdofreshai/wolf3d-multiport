@@ -1044,6 +1044,8 @@ function WallRefresh(): void {
 // ThreeDRefresh - main 3D rendering function
 //===========================================================================
 
+let _diagLogged = false;
+
 export function ThreeDRefresh(): void {
     if (!player) return;
 
@@ -1059,6 +1061,36 @@ export function ThreeDRefresh(): void {
 
     // Cast rays and draw walls
     WallRefresh();
+
+    // One-time diagnostic
+    if (!_diagLogged) {
+        _diagLogged = true;
+        const pmInfo = `PM: ChunksInFile=${PM.ChunksInFile} PMSpriteStart=${PM.PMSpriteStart}`;
+        const viewInfo = `View: w=${viewwidth} h=${viewheight} cx=${centerx}`;
+        const angleInfo = `pixelangle: [0]=${pixelangle[0]} [80]=${pixelangle[80]} [160]=${pixelangle[160]} [240]=${pixelangle[240]} [319]=${pixelangle[319]}`;
+        const whSample: number[] = [];
+        for (let i = 0; i < viewwidth; i += 32) whSample.push(wallheight[i] >> 3);
+        const wallInfo = `wallheight>>3: ${whSample.join(',')}`;
+        const playerInfo = `Player: x=${player.x} y=${player.y} angle=${player.angle} tilex=${player.tilex} tiley=${player.tiley}`;
+
+        // Check wall texture
+        const testPage = PM.PM_GetPage(0);
+        const texInfo = testPage ? `Page0: len=${testPage.length} first8=[${Array.from(testPage.slice(0, 8)).join(',')}]` : 'Page0: null';
+        const testPage1 = PM.PM_GetPage(1);
+        const texInfo1 = testPage1 ? `Page1: len=${testPage1.length} first8=[${Array.from(testPage1.slice(0, 8)).join(',')}]` : 'Page1: null';
+
+        console.log('[DIAG] ' + pmInfo);
+        console.log('[DIAG] ' + viewInfo);
+        console.log('[DIAG] ' + angleInfo);
+        console.log('[DIAG] ' + wallInfo);
+        console.log('[DIAG] ' + playerInfo);
+        console.log('[DIAG] ' + texInfo);
+        console.log('[DIAG] ' + texInfo1);
+
+        // Check scale, heightnumerator
+        const { scale: sc, heightnumerator: hn } = require('./wl_main');
+        console.log(`[DIAG] scale=${sc} heightnumerator=${hn}`);
+    }
 
     // Draw sprites
     DrawScaleds();
