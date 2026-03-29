@@ -18,7 +18,6 @@ import {
 import { graphicnums } from './gfxv_wl1';
 import { SDMode, SMMode, SDSMode } from './id_sd';
 import { sc_Escape } from './id_in';
-import { SetupScaling } from './wl_scale';
 
 //===========================================================================
 // Constants
@@ -162,7 +161,10 @@ export function SetViewSize(width: number, height: number): boolean {
     CalcProjection(FOCALLENGTH);
 
     // Initialize sprite scaling tables for this viewport size
-    SetupScaling(viewheight + 1);
+    // Use dynamic import to avoid circular dependency with wl_scale
+    import('./wl_scale').then(mod => {
+        if (mod.SetupScaling) mod.SetupScaling(viewheight + 1);
+    });
 
     return true;
 }
