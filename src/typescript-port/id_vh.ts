@@ -197,14 +197,22 @@ export function VWB_Vlin(y1: number, y2: number, x: number, color: number): void
 // VWB_DrawPic - Draw a graphic chunk to the screen
 //===========================================================================
 
+let _drawPicDebug = 0;
 export function VWB_DrawPic(x: number, y: number, chunknum: number): void {
     const picnum = chunknum - STARTPICS;
-    if (picnum < 0 || picnum >= pictable.length) return;
+    if (picnum < 0 || picnum >= pictable.length) {
+        if (_drawPicDebug < 20) { _drawPicDebug++; console.log(`[VWB_DrawPic] SKIP chunknum=${chunknum} picnum=${picnum} out of range (pictable.length=${pictable.length})`); }
+        return;
+    }
 
     const pic = pictable[picnum];
     const data = grsegs[chunknum];
-    if (!data) return;
+    if (!data) {
+        if (_drawPicDebug < 20) { _drawPicDebug++; console.log(`[VWB_DrawPic] SKIP chunknum=${chunknum} no data in grsegs`); }
+        return;
+    }
 
+    if (_drawPicDebug < 20) { _drawPicDebug++; console.log(`[VWB_DrawPic] chunknum=${chunknum} pic=${pic.width}x${pic.height} data=${data.length}bytes at (${x},${y})`); }
     VL.VL_MemToScreen(data, pic.width, pic.height, x, y);
 }
 

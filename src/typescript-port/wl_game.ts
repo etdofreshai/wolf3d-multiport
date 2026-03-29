@@ -19,7 +19,7 @@ import {
     enemy_t, gamedifficulty_t,
     setMapWidth, setMapHeight,
 } from './wl_def';
-import { STARTPICS, LATCHPICS_LUMP_START, LATCHPICS_LUMP_END } from './gfxv_wl1';
+import { STARTPICS, LATCHPICS_LUMP_START, LATCHPICS_LUMP_END, graphicnums } from './gfxv_wl1';
 import { gamestate, viewsize, screenloc, freelatch, SetViewSize, NewViewSize, loadedgame } from './wl_main';
 import {
     InitActorList, PlayLoop, playstate, player,
@@ -331,6 +331,11 @@ export function DrawPlayBorder(): void {
 export function DrawPlayScreen(): void {
     DrawPlayBorder();
     DrawAllPlayBorder();
+
+    // Draw status bar background
+    CA.CA_CacheGrChunk(graphicnums.STATUSBARPIC);
+    VH.VWB_DrawPic(0, 160, graphicnums.STATUSBARPIC);
+
     // Draw status bar elements
     DrawFace();
     DrawHealth();
