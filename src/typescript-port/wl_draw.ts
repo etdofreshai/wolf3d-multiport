@@ -361,7 +361,6 @@ function HitHorizWall(): void {
         texture = 0xfc0 - texture;
     }
     wallheight[pixx] = CalcHeight();
-    wallheight[pixx] = CalcHeight();
 
     if (lastside === 0 && lastintercept === ytile && lasttilehit === tilehit) {
         if (texture === posttexture) {
