@@ -606,20 +606,6 @@ function AsmRefresh(): void {
         }
     };
 
-    if (doDebug) {
-        console.log('[AsmRefresh] vw=', viewwidth, 'vh=', viewheight,
-            'midangle=', midangle, 'viewx=', viewx, 'viewy=', viewy,
-            'focaltx=', focaltx, 'focalty=', focalty,
-            'heightnum=', heightnumerator);
-        // Scan for nearest walls in each direction
-        const px = focaltx, py = focalty;
-        let wallInfo = '';
-        for (let d = 1; d <= 5; d++) {
-            wallInfo += ` E+${d}:${tilemapFlat(px+d,py)} W-${d}:${tilemapFlat(px-d,py)} N-${d}:${tilemapFlat(px,py-d)} S+${d}:${tilemapFlat(px,py+d)}`;
-        }
-        console.log('[AsmRefresh] walls:', wallInfo);
-    }
-
     for (pixx = 0; pixx < viewwidth; pixx++) {
         let angle_ray = midangle + pixelangle[pixx];
 
