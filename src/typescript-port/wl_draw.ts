@@ -984,7 +984,6 @@ export function DrawScaleds(): void {
 // DrawPlayerWeapon
 //===========================================================================
 
-let _weaponDebug = false;
 function DrawPlayerWeapon(): void {
     if (!player) return;
 
@@ -994,11 +993,6 @@ function DrawPlayerWeapon(): void {
 
     if ((gamestate.weapon as number) !== -1 && gamestate.weapon < weaponscale.length) {
         const shapenum = weaponscale[gamestate.weapon] + gamestate.weaponframe;
-        if (!_weaponDebug) {
-            _weaponDebug = true;
-            const spriteData = PM.PM_GetSpritePage(shapenum);
-            console.log(`[DrawPlayerWeapon] weapon=${gamestate.weapon} shape=${shapenum} spriteData=${spriteData ? spriteData.length : 'null'} maxscale=${maxscale} viewheight=${viewheight}`);
-        }
         SimpleScaleShape((viewwidth / 2) | 0, shapenum, viewheight + 1);
     }
 
