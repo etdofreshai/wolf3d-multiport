@@ -30,8 +30,8 @@ import { soundnames } from './audiowl1';
 //===========================================================================
 
 export const TURNTICS = 10;
-export const SPDPATROL = 512;
-export const SPDDOG = 1500;
+// SPDPATROL and SPDDOG moved to wl_def.ts to break circular dependency
+export { SPDPATROL, SPDDOG } from './wl_def';
 
 //===========================================================================
 // Direction tables

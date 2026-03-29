@@ -67,6 +67,9 @@ export const PIXGLOBAL = (GLOBAL1 / 64) | 0;
 export const TILESHIFT = 16;
 export const UNSIGNEDSHIFT = 8;
 
+export const SPDPATROL = 512;
+export const SPDDOG = 1500;
+
 export const ANGLES = 360;
 export const ANGLEQUAD = (ANGLES / 4);
 export const FINEANGLES = 3600;

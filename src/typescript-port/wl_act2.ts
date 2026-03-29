@@ -6,12 +6,13 @@ import {
     FL_SHOOTABLE, FL_AMBUSH, FL_ATTACKMODE, FL_FIRSTATTACK,
     TILEGLOBAL, TILESHIFT,
     SpriteEnum,
+    SPDPATROL, SPDDOG,
 } from './wl_def';
 import { gamestate } from './wl_main';
 import { player, GetNewActor, madenoise } from './wl_play';
 import {
     SpawnNewObj, NewState, SelectDodgeDir, SelectChaseDir, MoveObj,
-    SightPlayer, CheckSight, SPDPATROL, SPDDOG,
+    SightPlayer, CheckSight,
 } from './wl_state';
 import * as SD from './id_sd';
 import * as US from './id_us_1';
