@@ -20,8 +20,8 @@ import {
     playstate, setPlaystate, objlist,
 } from './wl_play';
 import { TakeDamage, HealSelf, GiveWeapon, GiveAmmo, DrawAmmo, DrawHealth, DrawKeys, DrawWeapon, DrawScore } from './wl_agent';
-import { soundnames } from './audiowl6';
-import { graphicnums, STARTFONT } from './gfxv_wl6';
+import { soundnames } from './audiowl1';
+import { graphicnums, STARTFONT } from './gfxv_wl1';
 
 //===========================================================================
 // Constants

@@ -19,7 +19,7 @@ import {
     enemy_t, gamedifficulty_t,
     setMapWidth, setMapHeight,
 } from './wl_def';
-import { STARTPICS, LATCHPICS_LUMP_START, LATCHPICS_LUMP_END } from './gfxv_wl6';
+import { STARTPICS, LATCHPICS_LUMP_START, LATCHPICS_LUMP_END } from './gfxv_wl1';
 import { gamestate, viewsize, screenloc, freelatch, SetViewSize, NewViewSize, loadedgame } from './wl_main';
 import {
     InitActorList, PlayLoop, playstate, player,
@@ -37,7 +37,7 @@ import {
 } from './wl_act2';
 import { SpawnPlayer, DrawFace, DrawHealth, DrawLevel, DrawLives, DrawScore, DrawWeapon, DrawKeys, DrawAmmo } from './wl_agent';
 import { ThreeDRefresh } from './wl_draw';
-import { soundnames } from './audiowl6';
+import { soundnames } from './audiowl1';
 import { horizwall, vertwall } from './wl_draw';
 
 //===========================================================================

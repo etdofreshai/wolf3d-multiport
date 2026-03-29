@@ -15,7 +15,7 @@ import {
 } from './wl_state';
 import * as SD from './id_sd';
 import * as US from './id_us_1';
-import { soundnames } from './audiowl6';
+import { soundnames } from './audiowl1';
 
 //===========================================================================
 // Think/Action functions

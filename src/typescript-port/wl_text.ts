@@ -7,7 +7,7 @@ import * as CA from './id_ca';
 import * as IN from './id_in';
 import * as US from './id_us_1';
 import * as SD from './id_sd';
-import { graphicnums, STARTPICS } from './gfxv_wl6';
+import { graphicnums, STARTPICS } from './gfxv_wl1';
 import { gamestate } from './wl_main';
 import { SETFONTCOLOR } from './wl_def';
 
@@ -362,29 +362,18 @@ export async function HelpScreens(): Promise<void> {
 //===========================================================================
 
 export async function EndText(): Promise<void> {
-    // Try to load end text from cached graphics
+    // T_ENDART chunks don't exist in shareware (WL1), use fallback text
     const episode = gamestate.episode;
-    const endChunk = graphicnums.T_ENDART1 + episode;
 
-    CA.CA_CacheGrChunk(endChunk);
-    const data = CA.grsegs[endChunk];
+    const endTexts = [
+        'You have escaped from Castle Wolfenstein!\n\nYour escape comes at a cost,\nbut the fight continues...\n\n^E',
+        'Dr. Schabbs has been defeated!\n\nThe mutant army is no more.\n\n^E',
+        'Hitler is dead!\n\nThe war may finally end.\n\n^E',
+        'Otto Giftmacher is no more!\n\nHis chemical weapons are destroyed.\n\n^E',
+        'Gretel Grosse has fallen!\n\nThe castle is secure.\n\n^E',
+        'General Fettgesicht is eliminated!\n\nVictory is yours!\n\n^E',
+    ];
 
-    if (data && data.length > 0) {
-        const decoder = new TextDecoder('ascii');
-        const text = decoder.decode(data);
-        await ShowArticle(text);
-    } else {
-        // Fallback end texts
-        const endTexts = [
-            'You have escaped from Castle Wolfenstein!\n\nYour escape comes at a cost,\nbut the fight continues...\n\n^E',
-            'Dr. Schabbs has been defeated!\n\nThe mutant army is no more.\n\n^E',
-            'Hitler is dead!\n\nThe war may finally end.\n\n^E',
-            'Otto Giftmacher is no more!\n\nHis chemical weapons are destroyed.\n\n^E',
-            'Gretel Grosse has fallen!\n\nThe castle is secure.\n\n^E',
-            'General Fettgesicht is eliminated!\n\nVictory is yours!\n\n^E',
-        ];
-
-        const text = endTexts[episode] || endTexts[0];
-        await ShowArticle(text);
-    }
+    const text = endTexts[episode] || endTexts[0];
+    await ShowArticle(text);
 }

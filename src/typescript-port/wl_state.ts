@@ -23,7 +23,7 @@ import {
     s_schabbdie1, s_fakedie1, s_mechadie1, s_hitlerdie1,
     A_DeathScream,
 } from './wl_act2';
-import { soundnames } from './audiowl6';
+import { soundnames } from './audiowl1';
 
 //===========================================================================
 // Constants

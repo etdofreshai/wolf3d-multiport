@@ -1,7 +1,7 @@
-// GFXV_WL6.TS - Graphics .H file for .WL1 (Shareware v1.4)
+// GFXV_WL1.TS - Graphics .H file for .WL1 (shareware v1.4)
 
 export enum graphicnums {
-    // Lump Start - Help section
+    // Lump Start - Help section (chunks 3-20)
     H_BJPIC = 3,
     H_CASTLEPIC = 4,
     H_KEYBOARDPIC = 5,
@@ -20,7 +20,7 @@ export enum graphicnums {
     H_LEFTWINDOWPIC = 18,
     H_RIGHTWINDOWPIC = 19,
     H_BOTTOMINFOPIC = 20,
-    // Lump Start - Controls section
+    // Lump Start - Controls section (chunks 21-54)
     C_OPTIONSPIC = 22,
     C_CURSOR1PIC = 23,
     C_CURSOR2PIC = 24,
@@ -54,7 +54,7 @@ export enum graphicnums {
     C_SCOREPIC = 52,
     C_JOY1PIC = 53,
     C_JOY2PIC = 54,
-    // Lump Start - Level end section
+    // Lump Start - Level end section (chunks 55-97)
     L_GUYPIC = 55,
     L_COLONPIC = 56,
     L_NUM0PIC = 57,
@@ -98,7 +98,7 @@ export enum graphicnums {
     L_APOSTROPHEPIC = 95,
     L_GUY2PIC = 96,
     L_BJWINSPIC = 97,
-    // Status/title/game section
+    // Status/title/game section (chunks 98-146)
     STATUSBARPIC = 98,
     TITLEPIC = 99,
     PG13PIC = 100,
@@ -149,7 +149,7 @@ export enum graphicnums {
     MUTANTBJPIC = 144,
     PAUSEDPIC = 145,
     GETPSYCHEDPIC = 146,
-
+    // Non-pic data chunks
     ORDERSCREEN = 148,
     ERRORSCREEN = 149,
     T_HELPART = 150,

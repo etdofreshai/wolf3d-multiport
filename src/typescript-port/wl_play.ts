@@ -23,8 +23,8 @@ import {
     startgame, loadedgame,
 } from './wl_main';
 import * as Draw from './wl_draw';
-import { graphicnums, STARTFONT } from './gfxv_wl6';
-import { soundnames, musicnames } from './audiowl6';
+import { graphicnums, STARTFONT } from './gfxv_wl1';
+import { soundnames, musicnames } from './audiowl1';
 const ThreeDRefresh = () => Draw.ThreeDRefresh();
 let lasttimecount = 0;
 import { MoveDoors, MovePWalls, ConnectAreas } from './wl_act1';

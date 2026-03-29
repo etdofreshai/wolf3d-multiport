@@ -4,7 +4,7 @@
 import * as VL from './id_vl';
 import * as IN from './id_in';
 import { grsegs, pictable } from './id_ca';
-import { STARTPICS, STARTFONT } from './gfxv_wl6';
+import { STARTPICS, STARTFONT } from './gfxv_wl1';
 import { NUMLATCHPICS, SCREENSIZE } from './wl_def';
 import { WOLF3D_PALETTE } from './gamepal';
 

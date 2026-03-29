@@ -15,7 +15,7 @@ import {
     gametype, newGametype, weapontype, NUMBUTTONS,
     SCREENSIZE,
 } from './wl_def';
-import { graphicnums } from './gfxv_wl6';
+import { graphicnums } from './gfxv_wl1';
 import { SDMode, SMMode, SDSMode } from './id_sd';
 import { sc_Escape } from './id_in';
 

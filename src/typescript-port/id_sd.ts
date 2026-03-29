@@ -2,7 +2,7 @@
 // Ported from ID_SD.C - Sound Manager using WebAudio API
 // By Jason Blochowiak, ported to browser
 
-import { soundnames, NUMSNDCHUNKS, STARTADLIBSOUNDS, STARTPCSOUNDS, STARTDIGISOUNDS, STARTMUSIC } from './audiowl6';
+import { soundnames, NUMSNDCHUNKS, STARTADLIBSOUNDS, STARTPCSOUNDS, STARTDIGISOUNDS, STARTMUSIC } from './audiowl1';
 
 //===========================================================================
 // Constants

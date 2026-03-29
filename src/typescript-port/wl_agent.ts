@@ -20,8 +20,8 @@ import {
 } from './wl_play';
 import * as Play from './wl_play';
 import { OperateDoor, PushWall, ConnectAreas } from './wl_act1';
-import { soundnames } from './audiowl6';
-import { graphicnums } from './gfxv_wl6';
+import { soundnames } from './audiowl1';
+import { graphicnums } from './gfxv_wl1';
 import { bt } from './wl_def';
 
 //===========================================================================

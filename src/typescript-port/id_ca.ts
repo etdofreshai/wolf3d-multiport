@@ -2,8 +2,8 @@
 // Ported from ID_CA.C - Cache Manager
 // Loads WL6 files via fetch() and provides asset access
 
-import { NUMCHUNKS, NUMPICS, STARTPICS, STARTFONT, STARTTILE8, STRUCTPIC } from './gfxv_wl6';
-import { NUMSNDCHUNKS } from './audiowl6';
+import { NUMCHUNKS, NUMPICS, STARTPICS, STARTFONT, STARTTILE8, STRUCTPIC } from './gfxv_wl1';
+import { NUMSNDCHUNKS } from './audiowl1';
 import { MAPSIZE } from './wl_def';
 import { mapsegs } from './wl_def';
 import { VL_MemToScreen } from './id_vl';
@@ -12,7 +12,7 @@ import { VL_MemToScreen } from './id_vl';
 // Constants
 //===========================================================================
 
-export const NUMMAPS = 60;
+export const NUMMAPS = 100;
 export const MAPPLANES = 2;
 const NEARTAG = 0xa7;
 const FARTAG = 0xa8;
@@ -70,7 +70,7 @@ let audioData: Uint8Array | null = null;
 let mapheadData: Uint8Array | null = null;
 let rlew_tag = 0;
 
-const extension = 'WL6';
+const extension = 'WL1';
 
 //===========================================================================
 // GRFILEPOS - 3-byte file positions
@@ -199,7 +199,8 @@ export function CA_RLEWexpand(source: Uint16Array, srcOffset: number, dest: Uint
 //===========================================================================
 
 async function loadFile(name: string): Promise<Uint8Array> {
-    const response = await fetch(`/${name}`);
+    const base = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/';
+    const response = await fetch(`${base}${name}`);
     if (!response.ok) {
         throw new Error(`CA: Could not load ${name}`);
     }

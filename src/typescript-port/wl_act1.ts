@@ -17,7 +17,7 @@ import {
 } from './wl_play';
 import { gamestate, loadedgame } from './wl_main';
 import * as SD from './id_sd';
-import { soundnames } from './audiowl6';
+import { soundnames } from './audiowl1';
 
 //===========================================================================
 // Constants

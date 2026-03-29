@@ -27,10 +27,11 @@ export let PageFileName = 'VSWAP.';
 //===========================================================================
 
 export async function PM_Startup(): Promise<void> {
-    const extension = 'WL6';
+    const extension = 'WL1';
     const filename = PageFileName + extension;
 
-    const response = await fetch(`/${filename}`);
+    const base = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/';
+    const response = await fetch(`${base}${filename}`);
     if (!response.ok) {
         throw new Error(`PM_Startup: Could not load ${filename}`);
     }
