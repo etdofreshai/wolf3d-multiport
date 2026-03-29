@@ -297,8 +297,6 @@ export function FarScalePost(): void {
 // HitVertWall
 //===========================================================================
 
-let _firstHitLogged = false;
-const _texSamples: [number, number][] = []; // [pixx, texture]
 function HitVertWall(): void {
     let wallpic: number;
     let texture = (yintercept >> 4) & 0xfc0;
@@ -308,7 +306,6 @@ function HitVertWall(): void {
         xintercept += TILEGLOBAL;
     }
     wallheight[pixx] = CalcHeight();
-    if (_asmDebugCount < 3) _texDebug.push(texture);
 
     if (lastside === 1 && lastintercept === xtile && lasttilehit === tilehit) {
         if (texture === posttexture) {
@@ -364,7 +361,7 @@ function HitHorizWall(): void {
         texture = 0xfc0 - texture;
     }
     wallheight[pixx] = CalcHeight();
-    if (_asmDebugCount < 3) _texDebug.push(texture + 10000); // +10000 to distinguish horiz
+    wallheight[pixx] = CalcHeight();
 
     if (lastside === 0 && lastintercept === ytile && lasttilehit === tilehit) {
         if (texture === posttexture) {
