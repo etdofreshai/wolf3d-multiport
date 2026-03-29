@@ -473,6 +473,9 @@ function WaitKeyUp(): void {
 //===========================================================================
 
 function SetupControlPanel(): void {
+    // Cache fonts
+    CA.CA_CacheGrChunk(STARTFONT + 1);
+
     // Cache menu graphics
     CA.CA_CacheGrChunk(graphicnums.C_OPTIONSPIC);
     CA.CA_CacheGrChunk(graphicnums.C_CURSOR1PIC);
