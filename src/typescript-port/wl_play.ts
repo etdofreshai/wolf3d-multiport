@@ -652,6 +652,7 @@ function DoActor(ob: objtype): void {
 export async function PlayLoop(): Promise<void> {
     playstate = exit_t.ex_stillplaying;
     lasttimecount = SD.TimeCount;
+    console.log('[PlayLoop] Starting, player=', player ? `x=${player.x} y=${player.y} angle=${player.angle}` : 'null');
 
     while (playstate === exit_t.ex_stillplaying) {
         IN.IN_ProcessEvents();

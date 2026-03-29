@@ -364,6 +364,13 @@ export async function GameLoop(): Promise<void> {
 
     fizzlein = true;
 
+    // Cache status bar and HUD graphics
+    CA.CA_CacheGrChunk(STARTPICS + 0);  // Ensure fonts are loaded
+    CA.CA_CacheGrChunk(STARTPICS + 1);
+
+    VL.VL_UpdateScreen();
+    await VH.VW_FadeIn();
+
     await PlayLoop();
 
     ingame = false;
