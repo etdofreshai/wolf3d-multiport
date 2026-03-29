@@ -106,11 +106,14 @@ export function VL_Startup(): void {
         throw new Error('Failed to get 2D context');
     }
 
-    // Scale canvas for display
+    // Scale canvas for display — fit within viewport
     canvas.width = 320;
     canvas.height = 200;
-    canvas.style.width = `${320 * 3}px`;
-    canvas.style.height = `${200 * 3}px`;
+    const maxW = window.innerWidth;
+    const maxH = window.innerHeight;
+    const scale = Math.min(maxW / 320, maxH / 200, 3);
+    canvas.style.width = `${Math.floor(320 * scale)}px`;
+    canvas.style.height = `${Math.floor(200 * scale)}px`;
 
     imageData = ctx.createImageData(320, 200);
 

@@ -332,6 +332,11 @@ export function DrawPlayScreen(): void {
     DrawPlayBorder();
     DrawAllPlayBorder();
 
+    // Cache all latch pics (weapons, keys, numbers, faces)
+    for (let i = LATCHPICS_LUMP_START; i <= LATCHPICS_LUMP_END; i++) {
+        CA.CA_CacheGrChunk(i);
+    }
+
     // Draw status bar background
     CA.CA_CacheGrChunk(graphicnums.STATUSBARPIC);
     VH.VWB_DrawPic(0, 160, graphicnums.STATUSBARPIC);
