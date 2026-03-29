@@ -598,7 +598,7 @@ function ypartialbyxstep(ypartial: number): number {
 
 let _asmDebugCount = 0;
 function AsmRefresh(): void {
-    const doDebug = _asmDebugCount < 3;
+    const doDebug = _asmDebugCount < 1;
     _asmDebugCount++;
     // Flat tilemap access helper
     const tilemapFlat = (tx: number, ty: number): number => {
@@ -684,11 +684,8 @@ function AsmRefresh(): void {
         // Trace along this angle until we hit a wall
         let hitWall = false;
         let maxIter = 256;
-        const doRayDebug = doDebug && (pixx === 0 || pixx === 120);
-        let rayIter = 0;
 
         while (!hitWall && maxIter-- > 0) {
-            rayIter++;
             // Determine which intercept is closer
             let do_vert: boolean;
             if (ytilestep === -1) {
@@ -697,8 +694,11 @@ function AsmRefresh(): void {
                 do_vert = yint_hi < yt;
             }
 
-            if (doRayDebug && rayIter <= 5) {
-                console.log(`[Ray px=${pixx} it=${rayIter}] xt=${xt} yt=${yt} yint_hi=${yint_hi} xint_hi=${xint_hi} do_vert=${do_vert} ytilestep=${ytilestep}`);
+            // Boundary check for the direction we're about to test
+            if (do_vert) {
+                if (xt < 0 || xt >= MAPSIZE || yint_hi < 0 || yint_hi >= MAPSIZE) break;
+            } else {
+                if (yt < 0 || yt >= MAPSIZE || xint_hi < 0 || xint_hi >= MAPSIZE) break;
             }
 
             if (do_vert) {
