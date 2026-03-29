@@ -297,9 +297,17 @@ export function FarScalePost(): void {
 // HitVertWall
 //===========================================================================
 
+let _firstHitLogged = false;
 function HitVertWall(): void {
     let wallpic: number;
     let texture = (yintercept >> 4) & 0xfc0;
+    if (!_firstHitLogged && pixx >= viewwidth / 2 - 1 && pixx <= viewwidth / 2 + 1) {
+        _firstHitLogged = true;
+        const sample = [];
+        // Log texture values for a range of columns around center
+        // We can't see other columns from here, but log what we have
+        console.log(`[HitVertWall] FIRST HIT pixx=${pixx} tile=${tilehit} tex=${texture} ht=${wallheight[pixx]} yint=${yintercept} xstep=${xstep}`);
+    }
 
     if (xtilestep === -1) {
         texture = 0xfc0 - texture;
