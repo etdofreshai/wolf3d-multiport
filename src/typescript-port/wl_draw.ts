@@ -306,6 +306,7 @@ function HitVertWall(): void {
         xintercept += TILEGLOBAL;
     }
     wallheight[pixx] = CalcHeight();
+    if (_asmDebugCount < 3) _texDebug.push(texture);
 
     if (lastside === 1 && lastintercept === xtile && lasttilehit === tilehit) {
         if (texture === posttexture) {
@@ -361,6 +362,7 @@ function HitHorizWall(): void {
         texture = 0xfc0 - texture;
     }
     wallheight[pixx] = CalcHeight();
+    if (_asmDebugCount < 3) _texDebug.push(texture + 10000); // +10000 to distinguish horiz
 
     if (lastside === 0 && lastintercept === ytile && lasttilehit === tilehit) {
         if (texture === posttexture) {
@@ -591,8 +593,9 @@ function ypartialbyxstep(ypartial: number): number {
 //===========================================================================
 
 let _asmDebugCount = 0;
+const _texDebug: number[] = [];
 function AsmRefresh(): void {
-    const doDebug = _asmDebugCount < 0; // disabled
+    const doDebug = false;
     _asmDebugCount++;
     // Flat tilemap access helper
     const tilemapFlat = (tx: number, ty: number): number => {
@@ -1054,8 +1057,16 @@ function WallRefresh(): void {
     ypartialup = TILEGLOBAL - ypartialdown;
 
     lastside = -1;
+    _texDebug.length = 0;
     AsmRefresh();
     ScalePost();  // flush last post
+    if (_asmDebugCount < 3) {
+        _asmDebugCount++;
+        // Show texture value distribution
+        const unique = [...new Set(_texDebug)];
+        const sampled = _texDebug.filter((_, i) => i % 20 === 0);
+        console.log(`[WallRefresh] ${_texDebug.length} columns, ${unique.length} unique textures, sampled every 20: [${sampled.join(',')}]`);
+    }
 }
 
 //===========================================================================
