@@ -18,7 +18,7 @@ import {
     SETFONTCOLOR,
 } from './wl_def';
 import {
-    gamestate, viewsize, buttonscan, buttonmouse, buttonjoy,
+    gamestate, viewsize, viewwidth, viewheight, buttonscan, buttonmouse, buttonjoy,
     dirscan, mouseenabled, joystickenabled, mouseadjustment,
     startgame, loadedgame,
 } from './wl_main';
