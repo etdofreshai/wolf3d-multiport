@@ -18,6 +18,7 @@ import {
 import { graphicnums } from './gfxv_wl1';
 import { SDMode, SMMode, SDSMode } from './id_sd';
 import { sc_Escape } from './id_in';
+import { SetupScaling } from './wl_scale';
 
 //===========================================================================
 // Constants
@@ -159,6 +160,10 @@ export function SetViewSize(width: number, height: number): boolean {
     screenofs = ((200 - 40 - viewheight) / 2) * 320 + ((320 - viewwidth) / 2);
 
     CalcProjection(FOCALLENGTH);
+
+    // Initialize sprite scaling tables for this viewport size
+    SetupScaling(viewheight + 1);
+
     return true;
 }
 
