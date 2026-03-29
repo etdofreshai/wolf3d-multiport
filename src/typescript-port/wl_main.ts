@@ -10,7 +10,7 @@ import * as MM from './id_mm';
 import * as PM from './id_pm';
 import * as US from './id_us_1';
 import {
-    ANGLES, FINEANGLES, GLOBAL1, TILEGLOBAL, TILESHIFT,
+    ANGLES, FINEANGLES, GLOBAL1, TILEGLOBAL, TILESHIFT, MINDIST,
     EXTRAPOINTS, STARTAMMO, MAXVIEWWIDTH, MAXSCALEHEIGHT,
     gametype, newGametype, weapontype, NUMBUTTONS,
     SCREENSIZE,
