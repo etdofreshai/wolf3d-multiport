@@ -359,9 +359,10 @@ async function DemoLoop(): Promise<void> {
         await US_ControlPanel(0);
 
         if (startgame || loadedgame) {
-            // TODO: GameLoop();
-            // For now, just show a message and loop back
-            console.log('Game would start here - GameLoop not yet implemented');
+            const { GameLoop } = await import('./wl_game');
+            await GameLoop();
+            startgame = false;
+            loadedgame = false;
             await VH.VW_FadeOut();
         }
     }
