@@ -1060,12 +1060,14 @@ function WallRefresh(): void {
     _texDebug.length = 0;
     AsmRefresh();
     ScalePost();  // flush last post
-    if (_asmDebugCount < 3) {
+    if (_asmDebugCount < 3 && _texDebug.length > 0) {
         _asmDebugCount++;
         // Show texture value distribution
         const unique = [...new Set(_texDebug)];
         const sampled = _texDebug.filter((_, i) => i % 20 === 0);
         console.log(`[WallRefresh] ${_texDebug.length} columns, ${unique.length} unique textures, sampled every 20: [${sampled.join(',')}]`);
+    } else if (_asmDebugCount < 3) {
+        // no walls this frame, don't count it
     }
 }
 
