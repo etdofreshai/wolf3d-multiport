@@ -24,7 +24,7 @@ import {
     areabyplayer, demorecord, demoplayback,
 } from './wl_play';
 import { doorposition, pwallpos as act1_pwallpos } from './wl_act1';
-import { ScaleShape, SimpleScaleShape } from './wl_scale';
+import { ScaleShape, SimpleScaleShape, maxscale } from './wl_scale';
 import { GetBonus } from './wl_agent';
 
 //===========================================================================
@@ -984,16 +984,21 @@ export function DrawScaleds(): void {
 // DrawPlayerWeapon
 //===========================================================================
 
+let _weaponDebug = false;
 function DrawPlayerWeapon(): void {
     if (!player) return;
 
     if (gamestate.victoryflag) {
-        // deathcam check omitted for simplicity
         return;
     }
 
     if ((gamestate.weapon as number) !== -1 && gamestate.weapon < weaponscale.length) {
         const shapenum = weaponscale[gamestate.weapon] + gamestate.weaponframe;
+        if (!_weaponDebug) {
+            _weaponDebug = true;
+            const spriteData = PM.PM_GetSpritePage(shapenum);
+            console.log(`[DrawPlayerWeapon] weapon=${gamestate.weapon} shape=${shapenum} spriteData=${spriteData ? spriteData.length : 'null'} maxscale=${maxscale} viewheight=${viewheight}`);
+        }
         SimpleScaleShape((viewwidth / 2) | 0, shapenum, viewheight + 1);
     }
 
