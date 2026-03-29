@@ -122,15 +122,19 @@ export function BuildTables(): void {
 
 export function CalcProjection(focal: number): void {
     focallength = focal;
-    scale = GLOBAL1;  // 1 to 1 scaling
 
-    centerx = viewwidth / 2;
-    shootdelta = viewwidth / 10;
+    const halfview = (viewwidth / 2) | 0;
+    const facedist = focal + MINDIST;
 
-    // Calculate heightnumerator for wall height projection
-    const facedist = focal + GLOBAL1 / 2;
-    heightnumerator = ((TILEGLOBAL * viewwidth / 2) * facedist) | 0;
-    minheightdiv = (viewwidth * 3) / 2;
+    // scale = halfview * facedist / (VIEWGLOBAL/2)
+    scale = ((halfview * facedist) / (VIEWGLOBAL / 2)) | 0;
+
+    centerx = halfview;
+    shootdelta = (viewwidth / 10) | 0;
+
+    // heightnumerator = (TILEGLOBAL * scale) >> 6
+    heightnumerator = (TILEGLOBAL * scale) >> 6;
+    minheightdiv = ((viewwidth * 3) / 2) | 0;
 
     // Calculate pixel angles for each column
     for (let i = 0; i < viewwidth; i++) {

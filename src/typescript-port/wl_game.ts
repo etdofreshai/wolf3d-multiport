@@ -262,15 +262,19 @@ export function SetupGameLevel(): void {
 
     // Copy wall data from plane 0
     let mapIdx = 0;
+    let wallCount = 0;
     for (let y = 0; y < MAPSIZE; y++) {
         for (let x = 0; x < MAPSIZE; x++) {
             const tile = mapsegs[0][mapIdx++];
             if (tile < AREATILE) {
                 tilemap[x][y] = tile;
                 actorat[x][y] = tile as any;
+                if (tile > 0) wallCount++;
             }
         }
     }
+    console.log('[SetupGameLevel] Wall tiles placed:', wallCount, 'mapsegs[0] length:', mapsegs[0]?.length,
+        'first 20 map values:', Array.from(mapsegs[0]?.slice(0, 20) || []));
 
     // Spawn doors, actors, items
     InitActorList();
