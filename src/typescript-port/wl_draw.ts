@@ -590,7 +590,10 @@ function ypartialbyxstep(ypartial: number): number {
 // AsmRefresh - core ray casting loop (from WL_DR_A.C)
 //===========================================================================
 
+let _asmDebugCount = 0;
 function AsmRefresh(): void {
+    const doDebug = _asmDebugCount < 3;
+    _asmDebugCount++;
     // Flat tilemap access helper
     const tilemapFlat = (tx: number, ty: number): number => {
         if (tx < 0 || tx >= MAPSIZE || ty < 0 || ty >= MAPSIZE) return 0;
@@ -601,6 +604,19 @@ function AsmRefresh(): void {
             spotvis[tx][ty] = 1;
         }
     };
+
+    if (doDebug) {
+        console.log('[AsmRefresh] viewwidth=', viewwidth, 'viewheight=', viewheight,
+            'midangle=', midangle, 'viewx=', viewx, 'viewy=', viewy,
+            'focaltx=', focaltx, 'focalty=', focalty,
+            'heightnumerator=', heightnumerator);
+        // Check tiles around the player
+        const px = focaltx, py = focalty;
+        console.log('[AsmRefresh] tiles around player:',
+            'N:', tilemapFlat(px, py-1), 'S:', tilemapFlat(px, py+1),
+            'E:', tilemapFlat(px+1, py), 'W:', tilemapFlat(px-1, py),
+            'here:', tilemapFlat(px, py));
+    }
 
     for (pixx = 0; pixx < viewwidth; pixx++) {
         let angle_ray = midangle + pixelangle[pixx];
