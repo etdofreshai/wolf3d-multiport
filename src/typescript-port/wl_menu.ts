@@ -164,7 +164,7 @@ export interface CP_iteminfo {
 export interface CP_itemtype {
     active: number;
     string: string;
-    routine: ((temp1: number) => void) | null;
+    routine: ((temp1: number) => void | Promise<void>) | null;
 }
 
 // Color tables for menu items
@@ -420,7 +420,7 @@ async function HandleMenu(items: CP_iteminfo, menu: CP_itemtype[], callback: ((w
 
             if (menu[which].routine) {
                 ShootSnd();
-                menu[which].routine!(0);
+                await menu[which].routine!(0);
             }
 
             done = true;
