@@ -297,6 +297,7 @@ export function FarScalePost(): void {
 // HitVertWall
 //===========================================================================
 
+let _hitDebugCount = 0;
 function HitVertWall(): void {
     let wallpic: number;
     let texture = (yintercept >> 4) & 0xfc0;
@@ -306,6 +307,11 @@ function HitVertWall(): void {
         xintercept += TILEGLOBAL;
     }
     wallheight[pixx] = CalcHeight();
+    if (_hitDebugCount < 5) {
+        _hitDebugCount++;
+        console.log('[HitVertWall] pixx=', pixx, 'tilehit=', tilehit, 'xtile=', xtile,
+            'height=', wallheight[pixx], 'texture=', texture);
+    }
 
     if (lastside === 1 && lastintercept === xtile && lasttilehit === tilehit) {
         if (texture === posttexture) {
@@ -606,16 +612,17 @@ function AsmRefresh(): void {
     };
 
     if (doDebug) {
-        console.log('[AsmRefresh] viewwidth=', viewwidth, 'viewheight=', viewheight,
+        console.log('[AsmRefresh] vw=', viewwidth, 'vh=', viewheight,
             'midangle=', midangle, 'viewx=', viewx, 'viewy=', viewy,
             'focaltx=', focaltx, 'focalty=', focalty,
-            'heightnumerator=', heightnumerator);
-        // Check tiles around the player
+            'heightnum=', heightnumerator);
+        // Scan for nearest walls in each direction
         const px = focaltx, py = focalty;
-        console.log('[AsmRefresh] tiles around player:',
-            'N:', tilemapFlat(px, py-1), 'S:', tilemapFlat(px, py+1),
-            'E:', tilemapFlat(px+1, py), 'W:', tilemapFlat(px-1, py),
-            'here:', tilemapFlat(px, py));
+        let wallInfo = '';
+        for (let d = 1; d <= 5; d++) {
+            wallInfo += ` E+${d}:${tilemapFlat(px+d,py)} W-${d}:${tilemapFlat(px-d,py)} N-${d}:${tilemapFlat(px,py-d)} S+${d}:${tilemapFlat(px,py+d)}`;
+        }
+        console.log('[AsmRefresh] walls:', wallInfo);
     }
 
     for (pixx = 0; pixx < viewwidth; pixx++) {
