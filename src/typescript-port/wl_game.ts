@@ -273,8 +273,6 @@ export function SetupGameLevel(): void {
             }
         }
     }
-    console.log('[SetupGameLevel] Wall tiles placed:', wallCount, 'mapsegs[0] length:', mapsegs[0]?.length,
-        'first 20 map values:', Array.from(mapsegs[0]?.slice(0, 20) || []));
 
     // Spawn doors, actors, items
     InitActorList();

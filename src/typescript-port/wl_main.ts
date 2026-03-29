@@ -362,13 +362,10 @@ async function DemoLoop(): Promise<void> {
         const { US_ControlPanel } = await import('./wl_menu');
         console.log('[DemoLoop] Entering US_ControlPanel');
         await US_ControlPanel(0);
-        console.log('[DemoLoop] US_ControlPanel returned, startgame=', startgame, 'loadedgame=', loadedgame);
 
         if (startgame || loadedgame) {
-            console.log('[DemoLoop] Starting GameLoop...');
             const { GameLoop } = await import('./wl_game');
             await GameLoop();
-            console.log('[DemoLoop] GameLoop returned');
             startgame = false;
             loadedgame = false;
             await VH.VW_FadeOut();

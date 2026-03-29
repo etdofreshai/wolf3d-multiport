@@ -302,9 +302,6 @@ const _texSamples: [number, number][] = []; // [pixx, texture]
 function HitVertWall(): void {
     let wallpic: number;
     let texture = (yintercept >> 4) & 0xfc0;
-    if (!_firstHitLogged) {
-        _texSamples.push([pixx, texture]);
-    }
 
     if (xtilestep === -1) {
         texture = 0xfc0 - texture;
@@ -360,9 +357,6 @@ function HitVertWall(): void {
 function HitHorizWall(): void {
     let wallpic: number;
     let texture = (xintercept >> 4) & 0xfc0;
-    if (!_firstHitLogged) {
-        _texSamples.push([pixx, texture + 10000]); // +10000 = horiz marker
-    }
 
     if (ytilestep === -1) {
         yintercept += TILEGLOBAL;
@@ -600,11 +594,7 @@ function ypartialbyxstep(ypartial: number): number {
 // AsmRefresh - core ray casting loop (from WL_DR_A.C)
 //===========================================================================
 
-let _asmDebugCount = 0;
-const _texDebug: number[] = [];
 function AsmRefresh(): void {
-    const doDebug = false;
-    _asmDebugCount++;
     // Flat tilemap access helper
     const tilemapFlat = (tx: number, ty: number): number => {
         if (tx < 0 || tx >= MAPSIZE || ty < 0 || ty >= MAPSIZE) return 0;
@@ -1065,16 +1055,8 @@ function WallRefresh(): void {
     ypartialup = TILEGLOBAL - ypartialdown;
 
     lastside = -1;
-    _texDebug.length = 0;
-    _texSamples.length = 0;
     AsmRefresh();
     ScalePost();  // flush last post
-    if (!_firstHitLogged && _texSamples.length > 0) {
-        _firstHitLogged = true;
-        const unique = [...new Set(_texSamples.map(s => s[1]))];
-        const sampled = _texSamples.filter((_, i) => i % 40 === 0).map(s => `${s[0]}:${s[1]}`);
-        console.log(`[WallRefresh] ${_texSamples.length} hits, ${unique.length} unique tex. Sampled: ${sampled.join(' ')}`);
-    }
 }
 
 //===========================================================================
