@@ -137,9 +137,11 @@ export function CalcProjection(focal: number): void {
     minheightdiv = ((viewwidth * 3) / 2) | 0;
 
     // Calculate pixel angles for each column
+    // Use scale as the projection plane distance (consistent with TransformActor:
+    // screen_offset = world_y_ratio * scale = tan(angle) * scale)
     for (let i = 0; i < viewwidth; i++) {
-        const tang = ((centerx - i) * GLOBAL1) / focal;
-        const angle = Math.atan2(tang, GLOBAL1);
+        const tang = (centerx - i) / (scale || 1);
+        const angle = Math.atan(tang);
         const intang = Math.round(angle * (FINEANGLES / (2 * Math.PI)));
         pixelangle[i] = intang;
     }

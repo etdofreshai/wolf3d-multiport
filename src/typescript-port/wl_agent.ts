@@ -9,11 +9,11 @@ import * as US from './id_us_1';
 import {
     objtype, statetype, statobj_t, stat_t,
     ANGLES, GLOBAL1, TILEGLOBAL, TILESHIFT, MINDIST, MAPSIZE, AREATILE,
-    FL_BONUS, FL_NEVERMARK,
+    FL_BONUS, FL_NEVERMARK, FL_SHOOTABLE,
     weapontype, classtype, dirtype, activetype, exit_t,
     tilemap, actorat, tics, mapsegs, farmapylookup,
 } from './wl_def';
-import { gamestate, sintable, costable, viewwidth, viewheight } from './wl_main';
+import { gamestate, sintable, costable, viewwidth, viewheight, shootdelta } from './wl_main';
 import {
     player, controlx, controly, buttonstate,
     statobjlist, godmode, noclip,
