@@ -655,7 +655,7 @@ export async function PlayLoop(): Promise<void> {
     console.log(`[PlayLoop] Starting, player=${player ? `x=${player.x} y=${player.y} angle=${player.angle}` : 'null'} health=${gamestate.health} ammo=${gamestate.ammo} lives=${gamestate.lives} weapon=${gamestate.weapon}`);
 
     // Expose game state for debugging
-    (window as any).__wolf3d = { player, gamestate, statobjlist, tilemap, spotvis, actorat };
+    (window as any).__wolf3d = { player, gamestate, statobjlist, tilemap, spotvis, actorat, setGodmode };
 
     while (playstate === exit_t.ex_stillplaying) {
         IN.IN_ProcessEvents();
