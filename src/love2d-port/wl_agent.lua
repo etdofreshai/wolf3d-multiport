@@ -368,6 +368,7 @@ end
 function wl_agent.GunAttack(ob)
     local wl_main = require("wl_main")
     local wl_play = require("wl_play")
+    local wl_state = require("wl_state")
 
     if wl_main.gamestate.ammo > 0 then
         wl_main.gamestate.ammo = wl_main.gamestate.ammo - 1
@@ -376,48 +377,56 @@ function wl_agent.GunAttack(ob)
 
     wl_play.madenoise = true
 
-    -- Check for hit on enemies in line of fire
+    -- Screen-space hit detection (original Wolf3D algorithm)
+    -- Uses viewx (screen x), transx (depth) set by TransformActor/DrawScaleds
     local player = wl_play.player
     if not player then return end
 
-    -- Trace from player toward facing angle and check actors
+    local centerx = wl_main.centerx
+    local shootdelta = wl_main.shootdelta
+
+    local viewdist = 0x7FFFFFFF
+    local closest = nil
+
     local ob_iter = player.next
-    local closest_dist = 999999
-    local closest_ob = nil
-
     while ob_iter do
-        if ob_iter.flags and band(ob_iter.flags, wl_def.FL_SHOOTABLE) ~= 0 then
-            -- Simple distance check along facing direction
-            local dx = ob_iter.tilex - player.tilex
-            local dy = ob_iter.tiley - player.tiley
-            local dist = math.sqrt(dx * dx + dy * dy)
-
-            -- Check if roughly in front of player
-            local angle_to = math.atan2(-dy, dx) * 180 / math.pi
-            if angle_to < 0 then angle_to = angle_to + 360 end
-            local angle_diff = math.abs(angle_to - player.angle)
-            if angle_diff > 180 then angle_diff = 360 - angle_diff end
-
-            if angle_diff < 15 and dist < closest_dist and dist < 10 then
-                closest_dist = dist
-                closest_ob = ob_iter
+        if ob_iter.flags and
+           band(ob_iter.flags, wl_def.FL_SHOOTABLE) ~= 0 and
+           band(ob_iter.flags, wl_def.FL_VISABLE) ~= 0 and
+           ob_iter.viewx then
+            if math.abs(ob_iter.viewx - centerx) < shootdelta then
+                if ob_iter.transx and ob_iter.transx < viewdist then
+                    viewdist = ob_iter.transx
+                    closest = ob_iter
+                end
             end
         end
         ob_iter = ob_iter.next
     end
 
-    if closest_ob then
-        local damage = rshift(id_us.US_RndT(), 4)
-        -- Damage scales with distance
-        if closest_dist > 2 then
-            damage = math.floor(damage / (closest_dist * 0.5))
+    if closest then
+        -- Verify line of sight
+        if wl_state.CheckLine(closest) then
+            -- Damage by distance (in tile units: transx >> TILESHIFT)
+            local dist = rshift(viewdist, wl_def.TILESHIFT)
+            local damage
+
+            if dist < 2 then
+                damage = rshift(id_us.US_RndT(), 4)
+            elseif dist < 4 then
+                damage = rshift(id_us.US_RndT(), 6)
+            else
+                if id_us.US_RndT() < 128 then
+                    return  -- miss at long range
+                end
+                damage = rshift(id_us.US_RndT(), 6)
+            end
+
+            if damage < 1 then damage = 1 end
+
+            id_sd.SD_PlaySound(audiowl6.HITENEMYSND)
+            wl_state.DamageActor(closest, damage)
         end
-        if damage < 1 then damage = 1 end
-
-        id_sd.SD_PlaySound(audiowl6.HITENEMYSND)
-
-        local wl_state = require("wl_state")
-        wl_state.DamageActor(closest_ob, damage)
     end
 end
 

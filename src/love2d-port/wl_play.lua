@@ -80,6 +80,8 @@ end
 local damagecount = 0
 local bonuscount  = 0
 local palshifted  = false
+wl_play.palshifted_red   = 0
+wl_play.palshifted_white = 0
 
 -- Red shifts for damage flash (6 levels from original)
 local NUMREDSHIFTS = 6
@@ -410,12 +412,16 @@ function wl_play.InitRedShifts()
     damagecount = 0
     bonuscount = 0
     palshifted = false
+    wl_play.palshifted_red = 0
+    wl_play.palshifted_white = 0
 end
 
 function wl_play.ClearPaletteShifts()
     damagecount = 0
     bonuscount = 0
     palshifted = false
+    wl_play.palshifted_red = 0
+    wl_play.palshifted_white = 0
 end
 
 function wl_play.StartDamageFlash(damage)
@@ -449,19 +455,14 @@ function wl_play.UpdatePaletteShifts()
         if damagecount < 0 then damagecount = 0 end
     end
 
-    if red > 0 or white > 0 then
-        -- Apply palette shift: modify the displayed palette temporarily
-        -- Shift toward red for damage, toward white for bonus
-        local shift_r = red * 10  -- max ~60
-        local shift_w = white * 8  -- max ~24
+    -- Expose current shift levels for the renderer
+    wl_play.palshifted_red = red
+    wl_play.palshifted_white = white
 
-        -- For Love2D, we just tint the screen slightly
-        -- This is handled in the render loop via screenbuf tinting
-        -- (A full implementation would modify id_vl.palette temporarily)
+    if red > 0 or white > 0 then
         palshifted = true
     else
         if palshifted then
-            -- Restore normal palette
             palshifted = false
         end
     end
@@ -473,6 +474,8 @@ function wl_play.FinishPaletteShifts()
     if palshifted then
         palshifted = false
     end
+    wl_play.palshifted_red = 0
+    wl_play.palshifted_white = 0
 end
 
 ---------------------------------------------------------------------------

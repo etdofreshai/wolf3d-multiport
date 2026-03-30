@@ -654,6 +654,7 @@ end
 T_Chase = function(ob)
     local wl_state = require("wl_state")
     local wl_main  = require("wl_main")
+    local wl_play  = require("wl_play")
 
     if ob.distance < 0 then
         -- Waiting for door to open
@@ -678,17 +679,41 @@ T_Chase = function(ob)
     end
 
     -- At tile center, decide what to do
-    local dx = math.abs(ob.tilex - (require("wl_play").player.tilex))
-    local dy = math.abs(ob.tiley - (require("wl_play").player.tiley))
+    local dx = math.abs(ob.tilex - wl_play.player.tilex)
+    local dy = math.abs(ob.tiley - wl_play.player.tiley)
+    local dist = math.max(dx, dy)
 
     if wl_state.CheckLine(ob) then
-        -- Can see player, maybe shoot
-        local chance = id_us.US_RndT()
+        -- Calculate firing chance based on enemy type (original Wolf3D algorithm)
+        -- chance = (tics << shift) / dist, compared against random byte
+        local tics = wl_main.tics
+        local chance = 0
+        local shoot_state = nil
+
+        if dist == 0 then dist = 1 end  -- avoid division by zero
+
         if ob.obclass == wl_def.guardobj then
-            if chance < 128 and dx < 3 and dy < 3 then
-                -- Shoot
-                local wl_state_mod = require("wl_state")
-                wl_state_mod.NewState(ob, wl_act2.s_grdshoot1)
+            chance = lshift(tics, 4) / dist
+            shoot_state = wl_act2.s_grdshoot1
+        elseif ob.obclass == wl_def.officerobj then
+            chance = lshift(tics, 5) / dist
+            shoot_state = wl_act2.s_ofcshoot1
+        elseif ob.obclass == wl_def.ssobj then
+            chance = lshift(tics, 4) / dist
+            shoot_state = wl_act2.s_ssshoot1
+        elseif ob.obclass == wl_def.mutantobj then
+            chance = lshift(tics, 5) / dist
+            shoot_state = wl_act2.s_mutshoot1
+        elseif ob.obclass == wl_def.dogobj then
+            -- Dogs never shoot (melee only via T_Bite / T_DogChase)
+            chance = 0
+            shoot_state = nil
+        end
+
+        if shoot_state and chance > 0 then
+            if chance > 255 then chance = 255 end
+            if id_us.US_RndT() < chance then
+                wl_state.NewState(ob, shoot_state)
                 return
             end
         end
@@ -830,9 +855,15 @@ T_BossChase = function(ob)
 
     local dx = math.abs(ob.tilex - wl_play.player.tilex)
     local dy = math.abs(ob.tiley - wl_play.player.tiley)
-    if wl_state.CheckLine(ob) and id_us.US_RndT() < 60 then
-        wl_state.NewState(ob, wl_act2.s_bossshoot1)
-        return
+    local dist = math.max(dx, dy)
+    if dist == 0 then dist = 1 end
+    if wl_state.CheckLine(ob) then
+        local chance = lshift(wl_main.tics, 5) / dist
+        if chance > 255 then chance = 255 end
+        if id_us.US_RndT() < chance then
+            wl_state.NewState(ob, wl_act2.s_bossshoot1)
+            return
+        end
     end
     wl_state.SelectDodgeDir(ob)
 end
@@ -847,9 +878,17 @@ T_SchabbChase = function(ob)
         if ob.distance <= 0 then ob.distance = 0 end
         return
     end
-    if wl_state.CheckLine(ob) and id_us.US_RndT() < 60 then
-        wl_state.NewState(ob, wl_act2.s_schabbshoot1)
-        return
+    local dx = math.abs(ob.tilex - (require("wl_play").player.tilex))
+    local dy = math.abs(ob.tiley - (require("wl_play").player.tiley))
+    local dist = math.max(dx, dy)
+    if dist == 0 then dist = 1 end
+    if wl_state.CheckLine(ob) then
+        local chance = lshift(wl_main.tics, 5) / dist
+        if chance > 255 then chance = 255 end
+        if id_us.US_RndT() < chance then
+            wl_state.NewState(ob, wl_act2.s_schabbshoot1)
+            return
+        end
     end
     wl_state.SelectDodgeDir(ob)
 end
@@ -891,9 +930,17 @@ T_GiftChase = function(ob)
         if ob.distance <= 0 then ob.distance = 0 end
         return
     end
-    if wl_state.CheckLine(ob) and id_us.US_RndT() < 60 then
-        wl_state.NewState(ob, wl_act2.s_giftshoot1)
-        return
+    local dx = math.abs(ob.tilex - (require("wl_play").player.tilex))
+    local dy = math.abs(ob.tiley - (require("wl_play").player.tiley))
+    local dist = math.max(dx, dy)
+    if dist == 0 then dist = 1 end
+    if wl_state.CheckLine(ob) then
+        local chance = lshift(wl_main.tics, 5) / dist
+        if chance > 255 then chance = 255 end
+        if id_us.US_RndT() < chance then
+            wl_state.NewState(ob, wl_act2.s_giftshoot1)
+            return
+        end
     end
     wl_state.SelectDodgeDir(ob)
 end
@@ -934,9 +981,17 @@ T_FatChase = function(ob)
         if ob.distance <= 0 then ob.distance = 0 end
         return
     end
-    if wl_state.CheckLine(ob) and id_us.US_RndT() < 60 then
-        wl_state.NewState(ob, wl_act2.s_fatshoot1)
-        return
+    local dx = math.abs(ob.tilex - (require("wl_play").player.tilex))
+    local dy = math.abs(ob.tiley - (require("wl_play").player.tiley))
+    local dist = math.max(dx, dy)
+    if dist == 0 then dist = 1 end
+    if wl_state.CheckLine(ob) then
+        local chance = lshift(wl_main.tics, 5) / dist
+        if chance > 255 then chance = 255 end
+        if id_us.US_RndT() < chance then
+            wl_state.NewState(ob, wl_act2.s_fatshoot1)
+            return
+        end
     end
     wl_state.SelectDodgeDir(ob)
 end
@@ -950,9 +1005,17 @@ T_FakeChase = function(ob)
         if ob.distance <= 0 then ob.distance = 0 end
         return
     end
-    if wl_state.CheckLine(ob) and id_us.US_RndT() < 60 then
-        wl_state.NewState(ob, wl_act2.s_fakeshoot1)
-        return
+    local dx = math.abs(ob.tilex - (require("wl_play").player.tilex))
+    local dy = math.abs(ob.tiley - (require("wl_play").player.tiley))
+    local dist = math.max(dx, dy)
+    if dist == 0 then dist = 1 end
+    if wl_state.CheckLine(ob) then
+        local chance = lshift(wl_main.tics, 5) / dist
+        if chance > 255 then chance = 255 end
+        if id_us.US_RndT() < chance then
+            wl_state.NewState(ob, wl_act2.s_fakeshoot1)
+            return
+        end
     end
     wl_state.SelectDodgeDir(ob)
 end
@@ -993,9 +1056,17 @@ T_MechaChase = function(ob)
         if ob.distance <= 0 then ob.distance = 0 end
         return
     end
-    if wl_state.CheckLine(ob) and id_us.US_RndT() < 64 then
-        wl_state.NewState(ob, wl_act2.s_mechashoot1)
-        return
+    local dx = math.abs(ob.tilex - (require("wl_play").player.tilex))
+    local dy = math.abs(ob.tiley - (require("wl_play").player.tiley))
+    local dist = math.max(dx, dy)
+    if dist == 0 then dist = 1 end
+    if wl_state.CheckLine(ob) then
+        local chance = lshift(wl_main.tics, 5) / dist
+        if chance > 255 then chance = 255 end
+        if id_us.US_RndT() < chance then
+            wl_state.NewState(ob, wl_act2.s_mechashoot1)
+            return
+        end
     end
     wl_state.SelectDodgeDir(ob)
 end
@@ -1009,9 +1080,17 @@ T_HitlerChase = function(ob)
         if ob.distance <= 0 then ob.distance = 0 end
         return
     end
-    if wl_state.CheckLine(ob) and id_us.US_RndT() < 80 then
-        wl_state.NewState(ob, wl_act2.s_hitlershoot1)
-        return
+    local dx = math.abs(ob.tilex - (require("wl_play").player.tilex))
+    local dy = math.abs(ob.tiley - (require("wl_play").player.tiley))
+    local dist = math.max(dx, dy)
+    if dist == 0 then dist = 1 end
+    if wl_state.CheckLine(ob) then
+        local chance = lshift(wl_main.tics, 5) / dist
+        if chance > 255 then chance = 255 end
+        if id_us.US_RndT() < chance then
+            wl_state.NewState(ob, wl_act2.s_hitlershoot1)
+            return
+        end
     end
     wl_state.SelectDodgeDir(ob)
 end
@@ -1024,9 +1103,17 @@ T_GretelChase = function(ob)
         if ob.distance <= 0 then ob.distance = 0 end
         return
     end
-    if wl_state.CheckLine(ob) and id_us.US_RndT() < 60 then
-        wl_state.NewState(ob, wl_act2.s_gretelshoot1)
-        return
+    local dx = math.abs(ob.tilex - (require("wl_play").player.tilex))
+    local dy = math.abs(ob.tiley - (require("wl_play").player.tiley))
+    local dist = math.max(dx, dy)
+    if dist == 0 then dist = 1 end
+    if wl_state.CheckLine(ob) then
+        local chance = lshift(wl_main.tics, 5) / dist
+        if chance > 255 then chance = 255 end
+        if id_us.US_RndT() < chance then
+            wl_state.NewState(ob, wl_act2.s_gretelshoot1)
+            return
+        end
     end
     wl_state.SelectDodgeDir(ob)
 end

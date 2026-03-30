@@ -560,20 +560,54 @@ function id_vl.VL_UpdateScreen()
     local pal = id_vl.palette
     local buf = id_vl.screenbuf
 
+    -- Get palette shift amounts from wl_play (damage=red, bonus=white)
+    local ok, wl_play = pcall(require, "wl_play")
+    local red_shift = 0
+    local white_shift = 0
+    if ok and wl_play then
+        red_shift = wl_play.palshifted_red or 0     -- 0..6 (NUMREDSHIFTS)
+        white_shift = wl_play.palshifted_white or 0  -- 0..3 (NUMWHITESHIFTS)
+    end
+
+    -- Pre-compute tint amounts (in 6-bit VGA space)
+    -- Red shift: boost R, reduce G and B proportionally
+    local red_add = red_shift * 10       -- max ~60 in 6-bit space
+    local red_sub = red_shift * 6        -- how much to reduce G/B
+    -- White shift: boost all channels proportionally
+    local white_add = white_shift * 8    -- max ~24 in 6-bit space
+
+    local has_shift = (red_shift > 0 or white_shift > 0)
+
     -- Use FFI pointer for speed if available
     local ptr = imgData:getFFIPointer()
     if ptr then
         for y = 0, 199 do
             for x = 0, 319 do
                 local idx = buf[y * 320 + x] or 0
+                local pr = pal[idx * 3 + 0] or 0
+                local pg = pal[idx * 3 + 1] or 0
+                local pb = pal[idx * 3 + 2] or 0
+
+                if has_shift then
+                    -- Apply damage (red) shift
+                    pr = pr + red_add
+                    pg = pg - red_sub
+                    pb = pb - red_sub
+                    -- Apply bonus (white) shift
+                    pr = pr + white_add
+                    pg = pg + white_add
+                    pb = pb + white_add
+                    -- Clamp to 6-bit range
+                    if pr > 63 then pr = 63 elseif pr < 0 then pr = 0 end
+                    if pg > 63 then pg = 63 elseif pg < 0 then pg = 0 end
+                    if pb > 63 then pb = 63 elseif pb < 0 then pb = 0 end
+                end
+
                 -- VGA palette values are 6-bit (0-63), scale to 8-bit (0-255)
-                local r = math.floor((pal[idx * 3 + 0] or 0) * 255 / 63)
-                local g = math.floor((pal[idx * 3 + 1] or 0) * 255 / 63)
-                local b = math.floor((pal[idx * 3 + 2] or 0) * 255 / 63)
                 local offset = (y * 320 + x) * 4
-                ptr[offset + 0] = r
-                ptr[offset + 1] = g
-                ptr[offset + 2] = b
+                ptr[offset + 0] = math.floor(pr * 255 / 63)
+                ptr[offset + 1] = math.floor(pg * 255 / 63)
+                ptr[offset + 2] = math.floor(pb * 255 / 63)
                 ptr[offset + 3] = 255
             end
         end
@@ -582,10 +616,23 @@ function id_vl.VL_UpdateScreen()
         for y = 0, 199 do
             for x = 0, 319 do
                 local idx = buf[y * 320 + x] or 0
-                local r = (pal[idx * 3 + 0] or 0) / 63
-                local g = (pal[idx * 3 + 1] or 0) / 63
-                local b = (pal[idx * 3 + 2] or 0) / 63
-                imgData:setPixel(x, y, r, g, b, 1)
+                local pr = pal[idx * 3 + 0] or 0
+                local pg = pal[idx * 3 + 1] or 0
+                local pb = pal[idx * 3 + 2] or 0
+
+                if has_shift then
+                    pr = pr + red_add
+                    pg = pg - red_sub
+                    pb = pb - red_sub
+                    pr = pr + white_add
+                    pg = pg + white_add
+                    pb = pb + white_add
+                    if pr > 63 then pr = 63 elseif pr < 0 then pr = 0 end
+                    if pg > 63 then pg = 63 elseif pg < 0 then pg = 0 end
+                    if pb > 63 then pb = 63 elseif pb < 0 then pb = 0 end
+                end
+
+                imgData:setPixel(x, y, pr / 63, pg / 63, pb / 63, 1)
             end
         end
     end
