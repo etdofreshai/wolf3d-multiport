@@ -21,6 +21,8 @@ import {
     s_grddie1, s_ofcdie1, s_ssdie1, s_mutdie1, s_dogdie1,
     s_bossdie1, s_greteldie1, s_giftdie1, s_fatdie1,
     s_schabbdie1, s_fakedie1, s_mechadie1, s_hitlerdie1,
+    s_schabbdeathcam, s_hitlerdeathcam, s_giftdeathcam, s_fatdeathcam,
+    s_hitlerchase1,
     A_DeathScream,
 } from './wl_act2';
 import { soundnames } from './audiowl1';
@@ -513,7 +515,7 @@ export function KillActor(ob: objtype): void {
                 gamestate.killx = player.x;
                 gamestate.killy = player.y;
             }
-            NewState(ob, s_giftdie1);
+            NewState(ob, s_giftdeathcam);
             break;
         case classtype.fatobj:
             GivePoints(5000);
@@ -521,7 +523,7 @@ export function KillActor(ob: objtype): void {
                 gamestate.killx = player.x;
                 gamestate.killy = player.y;
             }
-            NewState(ob, s_fatdie1);
+            NewState(ob, s_fatdeathcam);
             break;
         case classtype.schabbobj:
             GivePoints(5000);
@@ -529,8 +531,7 @@ export function KillActor(ob: objtype): void {
                 gamestate.killx = player.x;
                 gamestate.killy = player.y;
             }
-            NewState(ob, s_schabbdie1);
-            A_DeathScream(ob);
+            NewState(ob, s_schabbdeathcam);
             break;
         case classtype.fakeobj:
             GivePoints(2000);
@@ -542,9 +543,11 @@ export function KillActor(ob: objtype): void {
             break;
         case classtype.realhitlerobj:
             GivePoints(5000);
-            gamestate.killx = player ? player.x : 0;
-            gamestate.killy = player ? player.y : 0;
-            NewState(ob, s_hitlerdie1);
+            if (player) {
+                gamestate.killx = player.x;
+                gamestate.killy = player.y;
+            }
+            NewState(ob, s_hitlerdeathcam);
             break;
         default:
             break;
