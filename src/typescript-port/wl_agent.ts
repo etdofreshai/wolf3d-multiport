@@ -15,7 +15,7 @@ import {
 } from './wl_def';
 import { gamestate, sintable, costable, viewwidth, viewheight } from './wl_main';
 import {
-    player, controlx, controly, buttonstate,
+    player, controlx, controly, buttonstate, buttonheld,
     statobjlist, godmode, noclip,
 } from './wl_play';
 import * as Play from './wl_play';
@@ -251,6 +251,22 @@ function Cmd_Use(): void {
 }
 
 //===========================================================================
+// Cmd_Fire - start weapon attack
+//===========================================================================
+
+function Cmd_Fire(ob: objtype): void {
+    buttonheld[bt.bt_attack] = true;
+
+    gamestate.weaponframe = 0;
+
+    ob.state = s_attack;
+
+    gamestate.attackframe = 0;
+    gamestate.attackcount = attackinfo[gamestate.weapon][gamestate.attackframe].tics;
+    gamestate.weaponframe = attackinfo[gamestate.weapon][gamestate.attackframe].frame;
+}
+
+//===========================================================================
 // T_Player - main player think function
 //===========================================================================
 
@@ -263,10 +279,8 @@ function T_Player(ob: objtype): void {
         Cmd_Use();
     }
 
-    if (buttonstate[bt.bt_attack] && !gamestate.attackframe) {
-        gamestate.attackframe = 1;
-        gamestate.attackcount = attackinfo[gamestate.weapon][0].tics;
-        gamestate.weaponframe = attackinfo[gamestate.weapon][0].frame;
+    if (buttonstate[bt.bt_attack] && !buttonheld[bt.bt_attack]) {
+        Cmd_Fire(ob);
     }
 
     ControlMovement(ob);
