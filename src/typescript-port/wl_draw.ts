@@ -119,24 +119,23 @@ interface visobj_t {
 //===========================================================================
 
 export function FixedByFrac(a: number, b: number): number {
-    // b is signed magnitude: bit 31 (top of high word) is sign, low 16 bits are magnitude fraction
-    let sign = (b >> 16) & 0x8000;
-    let ua: number, ub: number;
+    // Full 16.16 × 16.16 fixed-point multiply: result = (a * b) >> 16
+    // The original x86 asm only used b's low 16 bits (fraction part),
+    // which breaks at exact cardinal angles where cos/sin = 65536 (0x10000).
+    // This version handles the full 32-bit range correctly.
+    const neg = (a < 0) !== (b < 0);
+    const ua = Math.abs(a);
+    const ub = Math.abs(b);
 
-    if (a < 0) {
-        ua = -a;
-        sign ^= 0x8000;
-    } else {
-        ua = a;
-    }
+    const a_lo = ua & 0xFFFF;
+    const a_hi = (ua >>> 16) & 0xFFFF;
+    const b_lo = ub & 0xFFFF;
+    const b_hi = (ub >>> 16) & 0xFFFF;
 
-    ub = b & 0xFFFF;
+    // (a * b) >> 16 = a_hi*b_hi*2^16 + a_hi*b_lo + a_lo*b_hi + (a_lo*b_lo >> 16)
+    const result = (a_hi * b_hi * 65536) + (a_hi * b_lo) + (a_lo * b_hi) + ((a_lo * b_lo) >>> 16);
 
-    const lo = (ua & 0xFFFF) * ub;
-    const hi = ((ua >>> 16) & 0xFFFF) * ub;
-    let result = hi + (lo >>> 16);
-
-    if (sign) return -(result | 0);
+    if (neg) return -(result | 0);
     return result | 0;
 }
 
