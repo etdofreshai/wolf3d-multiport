@@ -116,12 +116,38 @@ export function VW_MeasurePropString(str: string): { width: number; height: numb
 // VWB_DrawPropString
 //===========================================================================
 
+let _fontDiagDone = false;
+
 export function VWB_DrawPropString(str: string): void {
     const font = getFont(fontnumber);
     if (!font) return;
 
     const fontData = grsegs[STARTFONT + fontnumber];
     if (!fontData) return;
+
+    // One-time font diagnostics
+    if (!_fontDiagDone) {
+        _fontDiagDone = true;
+        console.log(`[FONT DIAG] fontnumber=${fontnumber} height=${font.height} dataLen=${fontData.length}`);
+        // Dump info for 'N', 'e', 'w' (first chars of "New Game")
+        for (const c of ['N', 'e', 'w', ' ', 'A', 'S']) {
+            const cc = c.charCodeAt(0);
+            console.log(`[FONT DIAG] '${c}' (${cc}): loc=${font.location[cc]} width=${font.width[cc]}`);
+        }
+        // Dump first 32 bytes at location of 'N'
+        const nLoc = font.location['N'.charCodeAt(0)];
+        if (nLoc >= 0 && nLoc < fontData.length) {
+            const bytes: number[] = [];
+            for (let j = 0; j < Math.min(64, fontData.length - nLoc); j++) {
+                bytes.push(fontData[nLoc + j]);
+            }
+            console.log(`[FONT DIAG] 'N' data @${nLoc}: [${bytes.join(',')}]`);
+        }
+        // Also check if location values are > 770 (past header)
+        const minLoc = Math.min(...Array.from(font.location).filter(l => l >= 0));
+        const maxLoc = Math.max(...Array.from(font.location).filter(l => l >= 0));
+        console.log(`[FONT DIAG] loc range: min=${minLoc} max=${maxLoc} header=770`);
+    }
 
     for (let i = 0; i < str.length; i++) {
         const ch = str.charCodeAt(i);
@@ -137,10 +163,10 @@ export function VWB_DrawPropString(str: string): void {
 
         if (charW === 0 || loc < 0) continue;
 
-        // Draw character pixel by pixel (font data is column-major in original Wolf3D)
+        // Draw character pixel by pixel
         for (let row = 0; row < charH; row++) {
             for (let col = 0; col < charW; col++) {
-                const srcIdx = loc + col * charH + row;
+                const srcIdx = loc + row * charW + col;
                 if (srcIdx < fontData.length) {
                     const pixel = fontData[srcIdx];
                     if (pixel !== 0) {
