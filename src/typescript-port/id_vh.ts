@@ -137,10 +137,10 @@ export function VWB_DrawPropString(str: string): void {
 
         if (charW === 0 || loc < 0) continue;
 
-        // Draw character pixel by pixel
+        // Draw character pixel by pixel (font data is column-major in original Wolf3D)
         for (let row = 0; row < charH; row++) {
             for (let col = 0; col < charW; col++) {
-                const srcIdx = loc + row * charW + col;
+                const srcIdx = loc + col * charH + row;
                 if (srcIdx < fontData.length) {
                     const pixel = fontData[srcIdx];
                     if (pixel !== 0) {
