@@ -164,15 +164,16 @@ export function VWB_DrawPropString(str: string): void {
         if (charW === 0 || loc < 0) continue;
 
         // Draw character pixel by pixel
+        // Original Wolf3D only draws foreground pixels (non-zero source bytes).
+        // Background is handled by callers (DrawWindow clears the area first).
+        // Only draw background explicitly when backcolor != 0xff (transparent).
         for (let row = 0; row < charH; row++) {
             for (let col = 0; col < charW; col++) {
                 const srcIdx = loc + row * charW + col;
-                if (srcIdx < fontData.length) {
+                if (srcIdx >= 0 && srcIdx < fontData.length) {
                     const pixel = fontData[srcIdx];
                     if (pixel !== 0) {
                         VL.VL_Plot(px + col, py + row, fontcolor);
-                    } else if (backcolor !== 0xff) {
-                        VL.VL_Plot(px + col, py + row, backcolor);
                     }
                 }
             }
