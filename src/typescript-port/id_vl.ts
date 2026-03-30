@@ -365,14 +365,12 @@ export function VL_MemToLatch(source: Uint8Array, width: number, height: number,
 
 export function VL_MemToScreen(source: Uint8Array, width: number, height: number, x: number, y: number): void {
     const pwidth = width >> 2;
-    const startplane = x & 3;
     let srcIdx = 0;
 
     for (let plane = 0; plane < 4; plane++) {
-        const curplane = (startplane + plane) & 3;
         for (let py = 0; py < height; py++) {
             for (let px = 0; px < pwidth; px++) {
-                const screenx = ((x >> 2) + px) * 4 + curplane;
+                const screenx = x + px * 4 + plane;
                 const screeny = y + py;
                 if (screenx >= 0 && screenx < 320 && screeny >= 0 && screeny < 200)
                     screenbuf[screeny * 320 + screenx] = source[srcIdx];
@@ -384,14 +382,12 @@ export function VL_MemToScreen(source: Uint8Array, width: number, height: number
 
 export function VL_MaskedToScreen(source: Uint8Array, width: number, height: number, x: number, y: number): void {
     const pwidth = width >> 2;
-    const startplane = x & 3;
     let srcIdx = 0;
 
     for (let plane = 0; plane < 4; plane++) {
-        const curplane = (startplane + plane) & 3;
         for (let py = 0; py < height; py++) {
             for (let px = 0; px < pwidth; px++) {
-                const screenx = ((x >> 2) + px) * 4 + curplane;
+                const screenx = x + px * 4 + plane;
                 const screeny = y + py;
                 const val = source[srcIdx];
                 if (val !== 0 && screenx >= 0 && screenx < 320 && screeny >= 0 && screeny < 200)

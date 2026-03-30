@@ -107,49 +107,39 @@ export function Thrust(angle: number, speed: number): void {
 // ClipMove - move object and clip against walls
 //===========================================================================
 
+function isSolidTile(x: number, y: number): boolean {
+    if (x < 0 || x >= MAPSIZE || y < 0 || y >= MAPSIZE) return true;
+    // Match original C TryMove: a tile blocks movement only if actorat is set
+    // and is a wall/door number (not null and not an actor object).
+    // When a door fully opens, actorat is set to null, so it won't block.
+    const at = actorat[x][y];
+    if (!at) return false;
+    if (typeof at === 'number') return true;
+    // If it's an object reference (actor), it doesn't block like a wall
+    return false;
+}
+
 function ClipMove(ob: objtype, xmove: number, ymove: number): void {
     const basex = ob.x;
     const basey = ob.y;
 
-    ob.x += xmove;
-    ob.y += ymove;
+    ob.x = basex + xmove;
+    ob.y = basey + ymove;
 
     if (noclip) return;
 
-    // Clip against walls
-    const tx = ob.x >> TILESHIFT;
-    const ty = ob.y >> TILESHIFT;
+    if (TryMove(ob)) return;
 
-    if (tx >= 0 && tx < MAPSIZE && ty >= 0 && ty < MAPSIZE) {
-        // Check if player is inside a wall
-        if (tilemap[tx][ty]) {
-            ob.x = basex;
-            ob.y = basey;
-            return;
-        }
-    }
+    ob.x = basex + xmove;
+    ob.y = basey;
+    if (TryMove(ob)) return;
 
-    // Check MINDIST from walls in all 4 directions
-    const px = ob.x;
-    const py = ob.y;
+    ob.x = basex;
+    ob.y = basey + ymove;
+    if (TryMove(ob)) return;
 
-    const checkx1 = (px - MINDIST) >> TILESHIFT;
-    const checkx2 = (px + MINDIST) >> TILESHIFT;
-    const checky1 = (py - MINDIST) >> TILESHIFT;
-    const checky2 = (py + MINDIST) >> TILESHIFT;
-
-    if (checkx1 >= 0 && checkx1 < MAPSIZE && ty >= 0 && ty < MAPSIZE && tilemap[checkx1][ty]) {
-        ob.x = ((checkx1 + 1) << TILESHIFT) + MINDIST;
-    }
-    if (checkx2 >= 0 && checkx2 < MAPSIZE && ty >= 0 && ty < MAPSIZE && tilemap[checkx2][ty]) {
-        ob.x = (checkx2 << TILESHIFT) - MINDIST;
-    }
-    if (tx >= 0 && tx < MAPSIZE && checky1 >= 0 && checky1 < MAPSIZE && tilemap[tx][checky1]) {
-        ob.y = ((checky1 + 1) << TILESHIFT) + MINDIST;
-    }
-    if (tx >= 0 && tx < MAPSIZE && checky2 >= 0 && checky2 < MAPSIZE && tilemap[tx][checky2]) {
-        ob.y = (checky2 << TILESHIFT) - MINDIST;
-    }
+    ob.x = basex;
+    ob.y = basey;
 }
 
 //===========================================================================
@@ -157,10 +147,18 @@ function ClipMove(ob: objtype, xmove: number, ymove: number): void {
 //===========================================================================
 
 function TryMove(ob: objtype): boolean {
-    const tx = ob.x >> TILESHIFT;
-    const ty = ob.y >> TILESHIFT;
-    if (tx < 0 || tx >= MAPSIZE || ty < 0 || ty >= MAPSIZE) return false;
-    if (tilemap[tx][ty]) return false;
+    const xl = (ob.x - MINDIST) >> TILESHIFT;
+    const yl = (ob.y - MINDIST) >> TILESHIFT;
+    const xh = (ob.x + MINDIST) >> TILESHIFT;
+    const yh = (ob.y + MINDIST) >> TILESHIFT;
+
+    // Check for solid walls (matches original C: check actorat, block if non-null number)
+    for (let y = yl; y <= yh; y++) {
+        for (let x = xl; x <= xh; x++) {
+            if (isSolidTile(x, y)) return false;
+        }
+    }
+
     return true;
 }
 

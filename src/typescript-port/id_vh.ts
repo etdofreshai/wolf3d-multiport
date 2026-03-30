@@ -206,6 +206,8 @@ export function VWB_DrawPic(x: number, y: number, chunknum: number): void {
     const data = grsegs[chunknum];
     if (!data) return;
 
+    x &= ~7;  // must be on an 8-pixel boundary (matches original C: x &= ~7)
+
     VL.VL_MemToScreen(data, pic.width, pic.height, x, y);
 }
 
