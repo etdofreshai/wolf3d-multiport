@@ -9,6 +9,7 @@ import * as US from './id_us_1';
 import {
     objtype, statetype, statobj_t, stat_t,
     ANGLES, GLOBAL1, TILEGLOBAL, TILESHIFT, MINDIST, MAPSIZE, AREATILE,
+    PUSHABLETILE, ELEVATORTILE, ALTELEVATORTILE,
     FL_BONUS, FL_NEVERMARK, FL_SHOOTABLE,
     weapontype, classtype, dirtype, activetype, exit_t,
     tilemap, actorat, tics, mapsegs, farmapylookup,
@@ -233,20 +234,63 @@ function CheckWeaponChange(): void {
 function Cmd_Use(): void {
     if (!player) return;
 
-    const checkx = player.tilex + ([0, 1, 0, -1][((player.angle + 45) / 90 | 0) % 4] || 0);
-    const checky = player.tiley + ([-1, 0, 1, 0][((player.angle + 45) / 90 | 0) % 4] || 0);
+    let checkx: number, checky: number, dir: number;
+    let elevatorok = false;
+
+    // Find which cardinal direction the player is facing
+    if (player.angle < ANGLES / 8 || player.angle > 7 * ANGLES / 8) {
+        // East
+        checkx = player.tilex + 1;
+        checky = player.tiley;
+        dir = dirtype.di_east;
+        elevatorok = true;
+    } else if (player.angle < 3 * ANGLES / 8) {
+        // North
+        checkx = player.tilex;
+        checky = player.tiley - 1;
+        dir = dirtype.di_north;
+        elevatorok = false;
+    } else if (player.angle < 5 * ANGLES / 8) {
+        // West
+        checkx = player.tilex - 1;
+        checky = player.tiley;
+        dir = dirtype.di_west;
+        elevatorok = true;
+    } else {
+        // South
+        checkx = player.tilex;
+        checky = player.tiley + 1;
+        dir = dirtype.di_south;
+        elevatorok = false;
+    }
 
     if (checkx < 0 || checkx >= MAPSIZE || checky < 0 || checky >= MAPSIZE) return;
 
     const doornum_val = tilemap[checkx][checky];
 
-    if (doornum_val & 0x80) {
-        // It's a door
-        OperateDoor(doornum_val & 0x3f);
-    } else if (doornum_val === 0x62) {
-        // Pushwall (PUSHABLETILE = 98 = 0x62)
-        const dir = ((player.angle + 45) / 90 | 0) % 4;
+    // Check for pushwall
+    if (mapsegs[1][farmapylookup[checky] + checkx] === PUSHABLETILE) {
         PushWall(checkx, checky, dir);
+        return;
+    }
+
+    // Check for elevator
+    if (!buttonheld[bt.bt_use] && doornum_val === ELEVATORTILE && elevatorok) {
+        buttonheld[bt.bt_use] = true;
+        tilemap[checkx][checky]++;
+        if (mapsegs[0][farmapylookup[player.tiley] + player.tilex] === ALTELEVATORTILE) {
+            Play.setPlaystate(exit_t.ex_secretlevel);
+        } else {
+            Play.setPlaystate(exit_t.ex_completed);
+        }
+        // SD_PlaySound(LEVELDONESND);
+        return;
+    }
+
+    // Check for door
+    if (!buttonheld[bt.bt_use] && (doornum_val & 0x80)) {
+        buttonheld[bt.bt_use] = true;
+        OperateDoor(doornum_val & ~0x80);
     }
 }
 
