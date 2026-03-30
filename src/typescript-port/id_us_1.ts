@@ -257,14 +257,19 @@ export function US_SetPrintRoutines(
 export function US_Print(str: string): void {
     const lines = str.split('\n');
     for (let i = 0; i < lines.length; i++) {
-        if (i > 0) {
-            PrintX = WindowX;
-            PrintY += 10;  // Approximate line height
-        }
+        const m = USL_MeasureString(lines[i]);
+
         VH.setPx(PrintX);
         VH.setPy(PrintY);
         USL_DrawString(lines[i]);
-        PrintX = VH.px;
+
+        if (i < lines.length - 1) {
+            // There was a newline after this segment
+            PrintX = WindowX;
+            PrintY += m.height;
+        } else {
+            PrintX += m.width;
+        }
     }
 }
 

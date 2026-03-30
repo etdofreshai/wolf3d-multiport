@@ -12,7 +12,16 @@ import { graphicnums, STARTFONT } from './gfxv_wl1';
 import { musicnames } from './audiowl1';
 import { soundnames } from './audiowl1';
 import { gamestate, NewGame, NewViewSize, viewsize, setViewSize, mouseadjustment, startgame, setStartGame, loadedgame, setLoadedGame } from './wl_main';
-import { exit_t, weapontype, SETFONTCOLOR } from './wl_def';
+import { exit_t, weapontype, SETFONTCOLOR as _SETFONTCOLOR } from './wl_def';
+
+// Wrap SETFONTCOLOR to also sync font/back colors to VH,
+// since VWB_DrawPropString reads from VH's local fontcolor.
+// In the original C code there is only one global fontcolor variable.
+function SETFONTCOLOR(f: number, b: number): void {
+    _SETFONTCOLOR(f, b);
+    VH.setFontColor(f);
+    VH.setBackColor(b);
+}
 import { playstate, setPlaystate, godmode } from './wl_play';
 
 //===========================================================================
@@ -58,14 +67,14 @@ const LSM_W = 175;
 const LSM_H = 13 * 10 + 10;
 
 const NE_X = 10;
-const NE_Y = 20;
+const NE_Y = 23;
 const NE_W = 300;
-const NE_H = 13 * 11 + 20;
+const NE_H = 200 - NE_Y * 2;
 
 const NM_X = 50;
 const NM_Y = 100;
 const NM_W = 225;
-const NM_H = 13 * 4 + 6;
+const NM_H = 13 * 4 + 15;
 
 const CST_Y = 57;
 
@@ -304,19 +313,32 @@ function DrawOutline(x: number, y: number, w: number, h: number, color1: number,
 //===========================================================================
 
 function DrawMenu(items: CP_iteminfo, menu: CP_itemtype[]): void {
-    const x = items.x + items.indent;
+    const which = items.curpos;
+
+    US.setWindowX(items.x + items.indent);
+    US.setPrintX(items.x + items.indent);
+    US.setWindowY(items.y);
+    US.setPrintY(items.y);
+    US.setWindowW(320);
+    US.setWindowH(200);
 
     for (let i = 0; i < items.amount; i++) {
-        if (menu[i].active) {
-            const color = color_norml[menu[i].active];
-
-            VH.setFontColor(color);
-            VH.setBackColor(BKGDCOLOR);
-
-            VH.setPx(x);
-            VH.setPy(items.y + i * 13);
-            VH.VWB_DrawPropString(menu[i].string);
+        if (which === i) {
+            SETFONTCOLOR(color_hlite[menu[i].active], BKGDCOLOR);
+        } else {
+            SETFONTCOLOR(color_norml[menu[i].active], BKGDCOLOR);
         }
+
+        US.setPrintY(items.y + i * 13);
+        if (menu[i].active) {
+            US.US_Print(menu[i].string);
+        } else {
+            SETFONTCOLOR(DEACTIVE, BKGDCOLOR);
+            US.US_Print(menu[i].string);
+            SETFONTCOLOR(TEXTCOLOR, BKGDCOLOR);
+        }
+
+        US.US_Print('\n');
     }
 }
 
@@ -344,11 +366,13 @@ function PrintMenuHighlight(items: CP_iteminfo, menu: CP_itemtype[], which: numb
     const x = items.x + items.indent;
     const y = items.y + which * 13;
 
-    VH.setFontColor(hilight ? color_hlite[menu[which].active] : color_norml[menu[which].active]);
-    VH.setBackColor(BKGDCOLOR);
-    VH.setPx(x);
-    VH.setPy(y);
-    VH.VWB_DrawPropString(menu[which].string);
+    SETFONTCOLOR(hilight ? color_hlite[menu[which].active] : color_norml[menu[which].active], BKGDCOLOR);
+    US.setPrintX(x);
+    US.setPrintY(y);
+    US.setWindowX(x);
+    US.setWindowW(320);
+    US.setWindowH(200);
+    US.US_Print(menu[which].string);
 }
 
 //===========================================================================
@@ -575,17 +599,15 @@ function DrawNewGame(): void {
     ClearMScreen();
     VH.VWB_DrawPic(112, 184, graphicnums.C_MOUSELBACKPIC);
 
+    SETFONTCOLOR(READHCOLOR, BKGDCOLOR);
+    US.setPrintX(NM_X + 20);
+    US.setPrintY(NM_Y - 32);
+    US.US_Print('How tough are you?');
+
     DrawWindow(NM_X - 5, NM_Y - 10, NM_W, NM_H, BKGDCOLOR);
 
-    SETFONTCOLOR(READHCOLOR, BKGDCOLOR);
-    VH.setPx(NM_X + 20);
-    VH.setPy(NM_Y - 5);
-    VH.VWB_DrawPropString('How tough are you?');
-
     DrawMenu(NewItems, NewMenu);
-
-    // Draw difficulty pictures
-    VH.VWB_DrawPic(NM_X + 185, NM_Y + 7, graphicnums.C_BABYMODEPIC + NewItems.curpos);
+    DrawNewGameDiff(NewItems.curpos);
 
     VH.VW_UpdateScreen();
 }
