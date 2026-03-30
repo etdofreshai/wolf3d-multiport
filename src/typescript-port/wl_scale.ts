@@ -119,7 +119,9 @@ function ScaleLine(): void {
 
             if (width_pix <= 0) continue;
 
-            const colorIdx = src_offset + (texel - texel_start);
+            // src_offset is "corrected top of shape" - already adjusted
+            // so shape_base[src_offset + texel] gives the color for absolute texel row
+            const colorIdx = src_offset + texel;
             if (colorIdx >= scaleline_shape_base.length) continue;
             const color = scaleline_shape_base[colorIdx];
             if (color === 0) continue;
