@@ -26,7 +26,7 @@ import * as Draw from './wl_draw';
 import { graphicnums, STARTFONT } from './gfxv_wl1';
 import { soundnames, musicnames } from './audiowl1';
 const ThreeDRefresh = () => Draw.ThreeDRefresh();
-let lasttimecount = 0;
+let lasttimecount = performance.now();
 import { MoveDoors, MovePWalls, ConnectAreas } from './wl_act1';
 import * as WlState from './wl_state';
 import { DebugKeys } from './wl_debug';
@@ -482,12 +482,21 @@ export function DrawAllPlayBorderSides(): void {
 //===========================================================================
 
 export function CalcTics(): void {
-    const newtime = SD.TimeCount;
-    let t = newtime - lasttimecount;
+    // Use performance.now() for real-time tic calculation
+    // Original Wolf3D ran at ~70Hz (14.3ms per tick)
+    const MS_PER_TIC = 14.2857; // 1000/70
+    const now = performance.now();
+    let elapsed = now - lasttimecount;
+    let t = Math.floor(elapsed / MS_PER_TIC);
     if (t <= 0) t = 1;
     if (t > MAXTICS) t = MAXTICS;
     setTics(t);
-    lasttimecount = newtime;
+    // Advance lasttimecount by the tics we consumed (avoid drift)
+    lasttimecount += t * MS_PER_TIC;
+    // If we're falling behind, reset to prevent catch-up bursts
+    if (now - lasttimecount > MS_PER_TIC * MAXTICS * 2) {
+        lasttimecount = now;
+    }
 }
 
 //===========================================================================
@@ -591,7 +600,7 @@ async function CheckKeys(): Promise<void> {
         if (loadedgame) {
             playstate = exit_t.ex_abort;
         }
-        lasttimecount = SD.TimeCount;
+        lasttimecount = performance.now();
         IN.IN_GetMouseDelta();
         return;
     }
@@ -605,7 +614,7 @@ async function CheckKeys(): Promise<void> {
         SETFONTCOLOR(0, 15);
         DebugKeys();
         IN.IN_GetMouseDelta();
-        lasttimecount = SD.TimeCount;
+        lasttimecount = performance.now();
         return;
     }
 }
@@ -626,7 +635,10 @@ function DoActor(ob: objtype): void {
             }
             // Move to next state
             if (ob.state && ob.state.next) {
-                ob.state = ob.state.next;
+                // Terminal state (tictime=00 — stop spinning forever
+                if (ob.state.tictime === 0) {
+                    break;  // tictime is 0, done, dead state
+                }
                 ob.ticcount += ob.state.tictime;
             } else {
                 break;
@@ -652,7 +664,8 @@ function DoActor(ob: objtype): void {
 
 export async function PlayLoop(): Promise<void> {
     playstate = exit_t.ex_stillplaying;
-    lasttimecount = SD.TimeCount;
+
+    lasttimecount = performance.now();
     console.log(`[PlayLoop] Starting, player=${player ? `x=${player.x} y=${player.y} angle=${player.angle}` : 'null'} health=${gamestate.health} ammo=${gamestate.ammo} lives=${gamestate.lives} weapon=${gamestate.weapon}`);
 
     // Expose game state for debugging
