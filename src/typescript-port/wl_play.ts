@@ -701,9 +701,10 @@ export async function PlayLoop(): Promise<void> {
             // Escape is handled in CheckKeys via US_ControlPanel
         }
 
-        // Check for player death
+        // Check for player death (temporary: clamp to 1 for testing)
         if (gamestate.health <= 0) {
-            playstate = exit_t.ex_died;
+            gamestate.health = 1; // DEBUG: prevent death for testing
+            // playstate = exit_t.ex_died;
         }
     }
 

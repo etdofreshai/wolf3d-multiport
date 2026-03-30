@@ -965,9 +965,10 @@ export function DrawScaleds(): void {
         }
     }
 
-    // Log when sprite visibility changes
-    if (vislist.length !== _lastVisCount) {
-        console.log(`[SPRITES] frame=${_spriteDiagFrame} visible=${vislist.length} player=${player.tilex},${player.tiley} items=[${vislist.slice(0,5).map(v => `{s=${v.shapenum} x=${v.viewx} h=${v.viewheight}}`).join(',')}]`);
+    // Log when sprites become visible (with on-screen check)
+    if (vislist.length !== _lastVisCount || (vislist.length > 0 && _spriteDiagFrame % 60 === 0)) {
+        const onScreen = vislist.filter(v => v.viewx >= -64 && v.viewx < viewwidth + 64);
+        console.log(`[SPRITES] f=${_spriteDiagFrame} vis=${vislist.length} onScr=${onScreen.length} player=${player.tilex},${player.tiley} angle=${player.angle} items=[${vislist.slice(0,8).map(v => `{s=${v.shapenum} x=${v.viewx} h=${v.viewheight}}`).join(',')}]`);
         _lastVisCount = vislist.length;
     }
 
