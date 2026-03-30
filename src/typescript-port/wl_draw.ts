@@ -880,33 +880,12 @@ export function CalcRotate(ob: objtype): number {
 // DrawScaleds - draw all visible sprites
 //===========================================================================
 
-let _spriteDiagCount = 0;
+let _spriteDiagFrame = 0;
+let _lastVisCount = -1;
 
 export function DrawScaleds(): void {
     if (!player) return;
-
-    // Sprite diagnostics (first 3 frames)
-    const doDiag = _spriteDiagCount < 3;
-    if (doDiag) {
-        _spriteDiagCount++;
-        let actorCount = 0;
-        let actorInfo: string[] = [];
-        for (let obj = player.next; obj; obj = obj.next) {
-            actorCount++;
-            if (actorCount <= 5) {
-                actorInfo.push(`{class=${obj.obclass} tile=${obj.tilex},${obj.tiley} shape=${obj.state ? obj.state.shapenum : 'null'} flags=${obj.flags}}`);
-            }
-        }
-        let staticCount = 0;
-        let staticVis = 0;
-        for (const s of statobjlist) {
-            if (s.shapenum !== -1) {
-                staticCount++;
-                if (s.tilex >= 0 && s.tilex < 64 && s.tiley >= 0 && s.tiley < 64 && spotvis[s.tilex][s.tiley]) staticVis++;
-            }
-        }
-        console.log(`[SPRITE F${_spriteDiagCount}] actors=${actorCount} statics=${staticCount} staticsVis=${staticVis} first5=[${actorInfo.join(', ')}]`);
-    }
+    _spriteDiagFrame++;
 
     const vislist: visobj_t[] = [];
 
@@ -986,8 +965,10 @@ export function DrawScaleds(): void {
         }
     }
 
-    if (doDiag) {
-        console.log(`[SPRITE F${_spriteDiagCount}] vislist=${vislist.length} items=[${vislist.slice(0,5).map(v => `{shape=${v.shapenum} vx=${v.viewx} vh=${v.viewheight}}`).join(', ')}]`);
+    // Log when sprite visibility changes
+    if (vislist.length !== _lastVisCount) {
+        console.log(`[SPRITES] frame=${_spriteDiagFrame} visible=${vislist.length} player=${player.tilex},${player.tiley} items=[${vislist.slice(0,5).map(v => `{s=${v.shapenum} x=${v.viewx} h=${v.viewheight}}`).join(',')}]`);
+        _lastVisCount = vislist.length;
     }
 
     // Draw from back to front (painter's algorithm)
@@ -1088,17 +1069,6 @@ export function ThreeDRefresh(): void {
 
     // Cast rays and draw walls
     WallRefresh();
-
-    // Spotvis diagnostic
-    if (_spriteDiagCount < 3) {
-        let svCount = 0;
-        for (let sy = 0; sy < MAPSIZE; sy++) {
-            for (let sx = 0; sx < MAPSIZE; sx++) {
-                if (spotvis[sx][sy]) svCount++;
-            }
-        }
-        console.log(`[SPOTVIS] tiles marked visible: ${svCount}, viewwidth=${viewwidth}, pixx final check`);
-    }
 
     // Draw sprites
     DrawScaleds();
