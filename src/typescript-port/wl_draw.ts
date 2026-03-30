@@ -880,12 +880,8 @@ export function CalcRotate(ob: objtype): number {
 // DrawScaleds - draw all visible sprites
 //===========================================================================
 
-let _spriteDiagFrame = 0;
-let _lastVisCount = -1;
-
 export function DrawScaleds(): void {
     if (!player) return;
-    _spriteDiagFrame++;
 
     const vislist: visobj_t[] = [];
 
@@ -963,13 +959,6 @@ export function DrawScaleds(): void {
         } else {
             obj.flags &= ~FL_VISABLE;
         }
-    }
-
-    // Log when sprites become visible (with on-screen check)
-    if (vislist.length !== _lastVisCount || (vislist.length > 0 && _spriteDiagFrame % 60 === 0)) {
-        const onScreen = vislist.filter(v => v.viewx >= -64 && v.viewx < viewwidth + 64);
-        console.log(`[SPRITES] f=${_spriteDiagFrame} vis=${vislist.length} onScr=${onScreen.length} player=${player.tilex},${player.tiley} angle=${player.angle} items=[${vislist.slice(0,8).map(v => `{s=${v.shapenum} x=${v.viewx} h=${v.viewheight}}`).join(',')}]`);
-        _lastVisCount = vislist.length;
     }
 
     // Draw from back to front (painter's algorithm)

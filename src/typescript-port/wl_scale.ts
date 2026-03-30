@@ -119,7 +119,7 @@ function ScaleLine(): void {
 
             if (width_pix <= 0) continue;
 
-            const colorIdx = src_offset + texel;
+            const colorIdx = src_offset + (texel - texel_start);
             if (colorIdx >= scaleline_shape_base.length) continue;
             const color = scaleline_shape_base[colorIdx];
             if (color === 0) continue;
@@ -144,28 +144,15 @@ function ScaleLine(): void {
 // ScaleShape - draw a scaled sprite with wall occlusion
 //===========================================================================
 
-let _scaleShapeDiagCount = 0;
-
 export function ScaleShape(xcenter: number, shapenum: number, height: number): void {
-    const doDiag = _scaleShapeDiagCount < 20;
-
     const spriteData = PM.PM_GetSpritePage(shapenum);
-    if (!spriteData || spriteData.length < 4) {
-        if (doDiag) { _scaleShapeDiagCount++; console.log(`[SCALE] SKIP no data shape=${shapenum}`); }
-        return;
-    }
+    if (!spriteData || spriteData.length < 4) return;
 
     const scaleVal = height >> 3;
-    if (!scaleVal || scaleVal > maxscale) {
-        if (doDiag) { _scaleShapeDiagCount++; console.log(`[SCALE] SKIP scale=${scaleVal} max=${maxscale} h=${height}`); }
-        return;
-    }
+    if (!scaleVal || scaleVal > maxscale) return;
 
     const comptable = scaledirectory[scaleVal];
-    if (!comptable) {
-        if (doDiag) { _scaleShapeDiagCount++; console.log(`[SCALE] SKIP no comptable scale=${scaleVal}`); }
-        return;
-    }
+    if (!comptable) return;
 
     linescale = comptable;
     scaleline_shape_base = spriteData;
@@ -174,11 +161,6 @@ export function ScaleShape(xcenter: number, shapenum: number, height: number): v
     const shapeView = new DataView(spriteData.buffer, spriteData.byteOffset, spriteData.byteLength);
     const leftpix = shapeView.getUint16(0, true);
     const rightpix = shapeView.getUint16(2, true);
-
-    if (doDiag) {
-        _scaleShapeDiagCount++;
-        console.log(`[SCALE] shape=${shapenum} xcenter=${xcenter} h=${height} scaleVal=${scaleVal} leftpix=${leftpix} rightpix=${rightpix} dataLen=${spriteData.length} vieww=${viewwidth} viewh=${viewheight}`);
-    }
 
     const cmdView = new DataView(spriteData.buffer, spriteData.byteOffset, spriteData.byteLength);
 

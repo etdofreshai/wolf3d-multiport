@@ -370,10 +370,8 @@ export function NormalScreen(): void {
 
 export async function GameLoop(): Promise<void> {
     ingame = true;
-    console.log(`[GameLoop] START health=${gamestate.health} ammo=${gamestate.ammo} lives=${gamestate.lives} weapon=${gamestate.weapon}`);
 
     SetupGameLevel();
-    console.log(`[GameLoop] AFTER SetupGameLevel health=${gamestate.health}`);
     DrawPlayScreen();
 
     fizzlein = true;
