@@ -880,27 +880,32 @@ export function CalcRotate(ob: objtype): number {
 // DrawScaleds - draw all visible sprites
 //===========================================================================
 
-let _spriteDiagDone = false;
+let _spriteDiagCount = 0;
 
 export function DrawScaleds(): void {
     if (!player) return;
 
-    // One-time sprite diagnostics
-    if (!_spriteDiagDone) {
-        _spriteDiagDone = true;
+    // Sprite diagnostics (first 3 frames)
+    const doDiag = _spriteDiagCount < 3;
+    if (doDiag) {
+        _spriteDiagCount++;
         let actorCount = 0;
         let actorInfo: string[] = [];
         for (let obj = player.next; obj; obj = obj.next) {
             actorCount++;
             if (actorCount <= 5) {
-                actorInfo.push(`{class=${obj.obclass} tile=${obj.tilex},${obj.tiley} state=${obj.state ? obj.state.shapenum : 'null'}}`);
+                actorInfo.push(`{class=${obj.obclass} tile=${obj.tilex},${obj.tiley} shape=${obj.state ? obj.state.shapenum : 'null'} flags=${obj.flags}}`);
             }
         }
         let staticCount = 0;
+        let staticVis = 0;
         for (const s of statobjlist) {
-            if (s.shapenum !== -1) staticCount++;
+            if (s.shapenum !== -1) {
+                staticCount++;
+                if (s.tilex >= 0 && s.tilex < 64 && s.tiley >= 0 && s.tiley < 64 && spotvis[s.tilex][s.tiley]) staticVis++;
+            }
         }
-        console.log(`[SPRITE DIAG] actors=${actorCount} statics=${staticCount} first5=[${actorInfo.join(', ')}]`);
+        console.log(`[SPRITE F${_spriteDiagCount}] actors=${actorCount} statics=${staticCount} staticsVis=${staticVis} first5=[${actorInfo.join(', ')}]`);
     }
 
     const vislist: visobj_t[] = [];
@@ -979,6 +984,10 @@ export function DrawScaleds(): void {
         } else {
             obj.flags &= ~FL_VISABLE;
         }
+    }
+
+    if (doDiag) {
+        console.log(`[SPRITE F${_spriteDiagCount}] vislist=${vislist.length} items=[${vislist.slice(0,5).map(v => `{shape=${v.shapenum} vx=${v.viewx} vh=${v.viewheight}}`).join(', ')}]`);
     }
 
     // Draw from back to front (painter's algorithm)

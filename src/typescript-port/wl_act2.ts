@@ -10,7 +10,7 @@ import {
     tics,
 } from './wl_def';
 import { gamestate } from './wl_main';
-import { player, GetNewActor, madenoise } from './wl_play';
+import { player, GetNewActor, madenoise, lastobj } from './wl_play';
 import {
     SpawnNewObj, NewState, SelectDodgeDir, SelectChaseDir, MoveObj,
     SightPlayer, CheckSight,
@@ -453,17 +453,10 @@ export function KillActor(ob: objtype): void {
     // Delegated to wl_state.ts KillActor
 }
 
-// Helpers
+// Helper to get the last spawned object
 function lastObj(): objtype | null {
-    // Get the last spawned object from the play module
-    // SpawnNewObj calls GetNewActor which sets lastobj
-    // We import it at the top
-    return _lastobj;
+    return lastobj;
 }
-
-// Lazy accessor for lastobj to avoid circular import at module init
-let _lastobj: objtype | null = null;
-export function _setLastObj(obj: objtype | null): void { _lastobj = obj; }
 
 function enemyToClass(which: enemy_t): classtype {
     switch (which) {
