@@ -635,9 +635,10 @@ function DoActor(ob: objtype): void {
             }
             // Move to next state
             if (ob.state && ob.state.next) {
-                // Terminal state (tictime=00 — stop spinning forever
+                ob.state = ob.state.next;
+                // Terminal state with tictime=0 (dead body) — stop processing
                 if (ob.state.tictime === 0) {
-                    break;  // tictime is 0, done, dead state
+                    break;
                 }
                 ob.ticcount += ob.state.tictime;
             } else {
