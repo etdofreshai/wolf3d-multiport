@@ -10,17 +10,18 @@ import {
     objtype, statetype, statobj_t, stat_t,
     ANGLES, GLOBAL1, TILEGLOBAL, TILESHIFT, MINDIST, MAPSIZE, AREATILE,
     PUSHABLETILE, ELEVATORTILE, ALTELEVATORTILE,
-    FL_BONUS, FL_NEVERMARK, FL_SHOOTABLE,
+    FL_BONUS, FL_NEVERMARK, FL_SHOOTABLE, FL_VISABLE,
     weapontype, classtype, dirtype, activetype, exit_t,
     tilemap, actorat, tics, mapsegs, farmapylookup,
 } from './wl_def';
-import { gamestate, sintable, costable, viewwidth, viewheight } from './wl_main';
+import { gamestate, sintable, costable, viewwidth, viewheight, centerx, shootdelta } from './wl_main';
 import {
     player, controlx, controly, buttonstate, buttonheld,
     statobjlist, godmode, noclip,
 } from './wl_play';
 import * as Play from './wl_play';
 import { OperateDoor, PushWall, ConnectAreas } from './wl_act1';
+import { CheckLine, DamageActor } from './wl_state';
 import { soundnames } from './audiowl1';
 import { graphicnums } from './gfxv_wl1';
 import { bt } from './wl_def';
@@ -351,72 +352,62 @@ function T_Player(ob: objtype): void {
 function GunAttack(): void {
     if (!player) return;
 
-    const px = player.x;
-    const py = player.y;
-    const angle = player.angle;
+    // Play weapon sound
+    switch (gamestate.weapon) {
+        case weapontype.wp_pistol:
+            SD.SD_PlaySound(soundnames.ATKPISTOLSND);
+            break;
+        case weapontype.wp_machinegun:
+            SD.SD_PlaySound(soundnames.ATKMACHINEGUNSND);
+            break;
+        case weapontype.wp_chaingun:
+            SD.SD_PlaySound(soundnames.ATKGATLINGSND);
+            break;
+    }
 
-    // Step through tiles along the shot direction
+    Play.setMadenoise(true);
+
+    // Find potential targets using screen-space coordinates
+    // (viewx, transx set by DrawScaleds each frame)
     let viewdist = 0x7fffffff;
-
-    // Check all actors for hit
     let closest: objtype | null = null;
-    let closestDist = 0x7fffffff;
 
-    for (let check = player.next; check; check = check.next) {
-        if (!(check.flags & FL_SHOOTABLE)) continue;
-        if (check.active === activetype.ac_no) continue;
+    while (true) {
+        const oldclosest = closest;
 
-        const dx = check.x - px;
-        const dy = check.y - py;
-
-        // Transform to player's view space
-        const sinAngle = sintable[angle];
-        const cosAngle = costable[angle];
-
-        // Distance along view direction
-        const dist = ((dx >> 16) * (cosAngle >> 16) - (dy >> 16) * (sinAngle >> 16)) << 16;
-        // Lateral offset
-        const lateral = ((dx >> 16) * (sinAngle >> 16) + (dy >> 16) * (cosAngle >> 16)) << 16;
-
-        if (dist <= 0) continue;
-
-        // Check if enemy is within the shot cone (±~1.5 degrees for single shot)
-        const shotspread = dist >> 5; // roughly ±3% of distance
-        if (lateral < -shotspread || lateral > shotspread) continue;
-
-        // Check for wall occlusion (simplified: check tiles between player and enemy)
-        let blocked = false;
-        const steps = Math.max(Math.abs(check.tilex - player.tilex), Math.abs(check.tiley - player.tiley));
-        for (let i = 1; i < steps && !blocked; i++) {
-            const tx = player.tilex + ((check.tilex - player.tilex) * i / steps) | 0;
-            const ty = player.tiley + ((check.tiley - player.tiley) * i / steps) | 0;
-            if (tx >= 0 && tx < MAPSIZE && ty >= 0 && ty < MAPSIZE) {
-                const tile = tilemap[tx][ty];
-                if (tile && !(tile & 0x80)) blocked = true; // solid wall blocks shot
+        for (let check = player.next; check; check = check.next) {
+            if ((check.flags & FL_SHOOTABLE) &&
+                (check.flags & FL_VISABLE) &&
+                Math.abs(check.viewx - centerx) < shootdelta) {
+                if (check.transx < viewdist) {
+                    viewdist = check.transx;
+                    closest = check;
+                }
             }
         }
-        if (blocked) continue;
 
-        if (dist < closestDist) {
-            closestDist = dist;
-            closest = check;
-        }
+        if (closest === oldclosest) return; // no more targets, all missed
+
+        // Trace a line from player to enemy
+        if (CheckLine(closest!)) break;
     }
 
-    if (closest) {
-        const dist = Math.max(Math.abs(closest.tilex - player.tilex), Math.abs(closest.tiley - player.tiley));
-        const hitchance = 256 - dist * 16;
-        if (hitchance > 0 && (US.US_RndT() & 0xFF) < hitchance) {
-            // Hit!
-            const damage = (US.US_RndT() % 10) + 1;
-            SD.SD_PlaySound(soundnames.HITENEMYSND);
-            import('./wl_state').then(WlState => WlState.DamageActor(closest!, damage));
-        } else {
-            SD.SD_PlaySound(soundnames.ATKPISTOLSND);
-        }
+    // Hit something — calculate damage based on tile distance
+    const dx = Math.abs(closest!.tilex - player.tilex);
+    const dy = Math.abs(closest!.tiley - player.tiley);
+    const dist = dx > dy ? dx : dy;
+
+    let damage: number;
+    if (dist < 2) {
+        damage = (US.US_RndT() / 4) | 0;
+    } else if (dist < 4) {
+        damage = (US.US_RndT() / 6) | 0;
     } else {
-        SD.SD_PlaySound(soundnames.ATKPISTOLSND);
+        if (((US.US_RndT() / 12) | 0) < dist) return; // missed
+        damage = (US.US_RndT() / 6) | 0;
     }
+
+    DamageActor(closest!, damage);
 }
 
 //===========================================================================

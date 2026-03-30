@@ -41,6 +41,7 @@ export let playstate: exit_t = exit_t.ex_stillplaying;
 export function setPlaystate(v: exit_t): void { playstate = v; }
 
 export let madenoise = false;
+export function setMadenoise(v: boolean): void { madenoise = v; }
 
 // Object lists
 export const objlist: objtype[] = Array.from({ length: MAXACTORS }, () => newObjtype());
