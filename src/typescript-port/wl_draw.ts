@@ -1089,6 +1089,17 @@ export function ThreeDRefresh(): void {
     // Cast rays and draw walls
     WallRefresh();
 
+    // Spotvis diagnostic
+    if (_spriteDiagCount < 3) {
+        let svCount = 0;
+        for (let sy = 0; sy < MAPSIZE; sy++) {
+            for (let sx = 0; sx < MAPSIZE; sx++) {
+                if (spotvis[sx][sy]) svCount++;
+            }
+        }
+        console.log(`[SPOTVIS] tiles marked visible: ${svCount}, viewwidth=${viewwidth}, pixx final check`);
+    }
+
     // Draw sprites
     DrawScaleds();
 
