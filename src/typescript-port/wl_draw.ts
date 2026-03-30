@@ -880,8 +880,28 @@ export function CalcRotate(ob: objtype): number {
 // DrawScaleds - draw all visible sprites
 //===========================================================================
 
+let _spriteDiagDone = false;
+
 export function DrawScaleds(): void {
     if (!player) return;
+
+    // One-time sprite diagnostics
+    if (!_spriteDiagDone) {
+        _spriteDiagDone = true;
+        let actorCount = 0;
+        let actorInfo: string[] = [];
+        for (let obj = player.next; obj; obj = obj.next) {
+            actorCount++;
+            if (actorCount <= 5) {
+                actorInfo.push(`{class=${obj.obclass} tile=${obj.tilex},${obj.tiley} state=${obj.state ? obj.state.shapenum : 'null'}}`);
+            }
+        }
+        let staticCount = 0;
+        for (const s of statobjlist) {
+            if (s.shapenum !== -1) staticCount++;
+        }
+        console.log(`[SPRITE DIAG] actors=${actorCount} statics=${staticCount} first5=[${actorInfo.join(', ')}]`);
+    }
 
     const vislist: visobj_t[] = [];
 
