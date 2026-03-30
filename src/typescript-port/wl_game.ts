@@ -10,9 +10,9 @@ import * as PM from './id_pm';
 import * as US from './id_us_1';
 import {
     NUMLATCHPICS, MAPSIZE, NUMAREAS, MAXACTORS, MAXSTATS, MAXDOORS,
-    STATUSLINES, SCREENBWIDE,
+    STATUSLINES, SCREENBWIDE, STARTAMMO,
     gametype, objtype, statobj_t, doorobj_t, newObjtype,
-    exit_t, classtype, activetype, dirtype,
+    exit_t, classtype, activetype, dirtype, weapontype,
     tilemap, spotvis, actorat, mapsegs, farmapylookup,
     AREATILE, AMBUSHTILE, ICONARROWS, PUSHABLETILE, EXITTILE,
     ELEVATORTILE, ALTELEVATORTILE,
@@ -23,8 +23,11 @@ import { STARTPICS, LATCHPICS_LUMP_START, LATCHPICS_LUMP_END, graphicnums } from
 import { gamestate, viewsize, screenloc, freelatch, SetViewSize, NewViewSize, loadedgame } from './wl_main';
 import {
     InitActorList, PlayLoop, playstate, player,
-    demorecord, demoplayback,
+    demorecord, demoplayback, StartMusic,
 } from './wl_play';
+import {
+    LevelCompleted, Victory, CheckHighScore, PreloadGraphics,
+} from './wl_inter';
 import {
     SpawnDoor, InitDoorList, InitStaticList, SpawnStatic, InitAreas,
     MoveDoors, MovePWalls,
@@ -371,21 +374,146 @@ export function NormalScreen(): void {
 export async function GameLoop(): Promise<void> {
     ingame = true;
 
-    SetupGameLevel();
     DrawPlayScreen();
 
-    fizzlein = true;
+    let died: boolean;
 
-    // Cache status bar and HUD graphics
-    CA.CA_CacheGrChunk(STARTPICS + 0);  // Ensure fonts are loaded
-    CA.CA_CacheGrChunk(STARTPICS + 1);
+    // restartgame: outer entry point
+    // restart: inner restart (same level after death)
+    gameloop:
+    do {
+        died = false;
 
-    VL.VL_UpdateScreen();
-    await VH.VW_FadeIn();
+        if (!loadedgame) {
+            gamestate.TimeCount = 0;
+        }
 
-    await PlayLoop();
+        SetupGameLevel();
+        StartMusic();
+        PreloadGraphics();
 
-    ingame = false;
+        fizzlein = true;
+
+        DrawPlayScreen();
+
+        // Cache status bar and HUD graphics
+        CA.CA_CacheGrChunk(STARTPICS + 0);
+        CA.CA_CacheGrChunk(STARTPICS + 1);
+
+        VL.VL_UpdateScreen();
+        await VH.VW_FadeIn();
+
+        await PlayLoop();
+
+        switch (playstate) {
+            //--------------------------------------------------
+            // Level completed or secret level exit
+            //--------------------------------------------------
+            case exit_t.ex_completed:
+            case exit_t.ex_secretlevel:
+                gamestate.oldscore = gamestate.score;
+
+                await LevelCompleted();   // intermission screen
+
+                gamestate.keys = 0;
+                DrawKeys();
+
+                if (playstate === exit_t.ex_secretlevel) {
+                    // Warp to the secret level (map 9 for Wolf3D episodes)
+                    gamestate.mapon = 9;
+                } else if (gamestate.mapon === 9) {
+                    // Returning from secret level — go back via elevator table
+                    gamestate.mapon = ElevatorBackTo[gamestate.episode];
+                } else {
+                    gamestate.mapon++;
+                }
+
+                // Check if episode is finished (maps 0-7 are regular, 8 is boss, 9 is secret)
+                // After map 8, the game should have triggered ex_victorious for the boss,
+                // but guard against overflow:
+                if (gamestate.mapon > 9) {
+                    // Episode done — treat as victory
+                    await Victory();
+                    await CheckHighScore(gamestate.score, gamestate.mapon);
+                    ingame = false;
+                    return;
+                }
+
+                ClearMemory();
+                continue gameloop;
+
+            //--------------------------------------------------
+            // Player died
+            //--------------------------------------------------
+            case exit_t.ex_died:
+                // Death fizzle effect — red screen fade
+                FizzleOut();
+
+                died = true;
+                gamestate.lives--;
+
+                if (gamestate.lives >= 0) {
+                    // Still have lives — reset and restart same level
+                    gamestate.health = 100;
+                    gamestate.ammo = STARTAMMO;
+                    gamestate.keys = 0;
+                    gamestate.weapon = weapontype.wp_pistol;
+                    gamestate.bestweapon = weapontype.wp_pistol;
+                    gamestate.chosenweapon = weapontype.wp_pistol;
+                    gamestate.attackframe = 0;
+                    gamestate.attackcount = 0;
+                    gamestate.weaponframe = 0;
+                    gamestate.faceframe = 0;
+
+                    DrawKeys();
+                    DrawWeapon();
+                    DrawAmmo();
+                    DrawHealth();
+                    DrawFace();
+                    DrawLives();
+
+                    ClearMemory();
+                    continue gameloop;  // restart the same level
+                } else {
+                    // Game over — no lives left
+                    SD.SD_StopSound();
+                    await CheckHighScore(gamestate.score, gamestate.mapon);
+                    ingame = false;
+                    return;  // back to demo loop / main menu
+                }
+
+            //--------------------------------------------------
+            // Victory (boss killed)
+            //--------------------------------------------------
+            case exit_t.ex_victorious:
+                SD.SD_StopSound();
+                await Victory();
+                await CheckHighScore(gamestate.score, gamestate.mapon);
+                ingame = false;
+                return;
+
+            //--------------------------------------------------
+            // Warped (debug/cheat), loaded game, or aborted
+            //--------------------------------------------------
+            case exit_t.ex_warped:
+                ClearMemory();
+                continue gameloop;
+
+            case exit_t.ex_resetgame:
+            case exit_t.ex_loadedgame:
+                ClearMemory();
+                continue gameloop;
+
+            case exit_t.ex_abort:
+                ingame = false;
+                return;
+
+            default:
+                // ex_demodone or unexpected — exit
+                ingame = false;
+                return;
+        }
+    } while (true);
 }
 
 //===========================================================================
@@ -393,7 +521,13 @@ export async function GameLoop(): Promise<void> {
 //===========================================================================
 
 export function FizzleOut(): void {
-    // Fizzle fade effect (randomized pixel fill)
+    // Fizzle fade to red on death — fills the 3D view with red using a
+    // randomized pixel pattern (LFSR-based in the original).  For now we
+    // do a simple red bar fill since VH.FizzleFade is async and this is
+    // called synchronously in the death path.  A full LFSR fizzle can be
+    // wired up later when the rendering pipeline supports it.
+    VL.VL_Bar(0, 0, 320, 200 - STATUSLINES, 4);  // color 4 = red in Wolf3D palette
+    VL.VL_UpdateScreen();
 }
 
 //===========================================================================
@@ -425,6 +559,5 @@ export function DrawHighScores(): void {
     // Draw high score screen
 }
 
-export function CheckHighScore(_score: number, _other: number): void {
-    // Check if score qualifies for high score table
-}
+// CheckHighScore is now imported from wl_inter.ts.
+// The stub that was here has been removed to avoid shadowing the real implementation.
