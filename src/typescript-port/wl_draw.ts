@@ -1087,9 +1087,10 @@ export function ThreeDRefresh(): void {
         console.log('[DIAG] ' + texInfo);
         console.log('[DIAG] ' + texInfo1);
 
-        // Check scale, heightnumerator
-        const { scale: sc, heightnumerator: hn } = require('./wl_main');
-        console.log(`[DIAG] scale=${sc} heightnumerator=${hn}`);
+        // Check scale, heightnumerator (use dynamic import instead of require)
+        import('./wl_main').then(({ scale: sc, heightnumerator: hn }) => {
+            console.log(`[DIAG] scale=${sc} heightnumerator=${hn}`);
+        }).catch(() => console.log('[DIAG] Could not load wl_main for diagnostics'));
     }
 
     // Draw sprites
